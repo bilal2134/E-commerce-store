@@ -37,7 +37,9 @@ services:
       - key: MEDIA_BASE_URL
         sync: false
       - key: CLIENT_IP_HEADER
-        value: x-forwarded-for # verify what Render's proxy sets before relying on per-IP limits
+        value: x-forwarded-for # read from the right (CLIENT_IP_TRUSTED_HOPS); verify Render's hop count
+      - key: CLIENT_IP_TRUSTED_HOPS
+        value: "1"
       - key: LOG_LEVEL
         value: info
       - key: ANALYTICS_PROVIDER

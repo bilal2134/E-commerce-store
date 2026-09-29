@@ -58,4 +58,39 @@ test.describe.serial("admin settings", () => {
     await expect(page.getByText("Add a homepage banner image (done)")).toBeVisible();
     await expect(page.getByText("Answer the payment question in the FAQ (done)")).toBeVisible();
   });
+  test("saved settings reach the storefront immediately (AS-15, AS-16, AS-17)", async ({ page }) => {
+    const save = async () => {
+      await page.getByRole("button", { name: "Save settings" }).click();
+      await expect(page.getByRole("status").filter({ hasText: "Settings saved" })).toBeVisible({
+        timeout: 30_000,
+      });
+    };
+    await page.goto("/admin/settings");
+    await page.locator("#heroTitle").fill("Summer edit");
+    await page.locator("#deliverySummary").fill("Delivery in 18–20 days (updated)");
+    await page.getByLabel("WhatsApp number").fill("0321 7654321");
+    await save();
+
+    try {
+      await page.goto("/");
+      await expect(page.getByRole("heading", { level: 1, name: "Summer edit" })).toBeVisible();
+      await page.goto("/contact");
+      await expect(page.getByText("Delivery in 18–20 days (updated)").first()).toBeVisible();
+      await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
+        "href",
+        /^https:\/\/wa\.me\/923217654321\?/,
+      );
+      await page.goto("/product/golden-shell-clutch");
+      await expect(page.getByText("Delivery in 18–20 days (updated)").first()).toBeVisible();
+      for (const link of await page.locator('a[href^="https://wa.me/"]').all()) {
+        await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/923217654321/);
+      }
+    } finally {
+      // Restore seed values so storefront specs stay deterministic.
+      await page.goto("/admin/settings");
+      await page.locator("#deliverySummary").fill("Delivery in 18–20 days");
+      await page.getByLabel("WhatsApp number").fill("0300 1234567");
+      await save();
+    }
+  });
 });

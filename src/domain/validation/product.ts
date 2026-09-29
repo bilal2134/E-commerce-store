@@ -7,6 +7,7 @@ import {
   MIN_PRODUCT_IMAGES,
   STOCK_STATUSES,
 } from "../catalog";
+import { IMAGE_MAX_EDGE, IMAGE_VARIANT_WIDTHS } from "../images";
 import { normalizeInstagramHandle } from "../ordering";
 import { formString, jsonField, optionalRupees, parseRupees, requiredRupees, SLUG_RE } from "./common";
 
@@ -14,10 +15,16 @@ export const DEFAULT_COLLAB_HANDLE = "fairycoreforher";
 
 export const productImageSchema = z.object({
   storageKey: z.string().regex(/^products\/[0-9a-f-]{36}$/, "Invalid image reference"),
-  widths: z.array(z.number().int().positive()).min(1).max(6),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-  blurDataUrl: z.string().max(6000).nullable(),
+  // Metadata comes back from our own upload action; still validate strictly so a
+  // tampered request can't inject CSS via the placeholder or bogus variants.
+  widths: z.array(z.number().int().min(1).max(IMAGE_MAX_EDGE)).min(1).max(IMAGE_VARIANT_WIDTHS.length),
+  width: z.number().int().min(1).max(IMAGE_MAX_EDGE),
+  height: z.number().int().min(1).max(IMAGE_MAX_EDGE),
+  blurDataUrl: z
+    .string()
+    .max(6000)
+    .regex(/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/, "Invalid image placeholder")
+    .nullable(),
   alt: z.string().trim().max(200, "Alt text must be 200 characters or fewer"),
 });
 export type ProductImageInput = z.infer<typeof productImageSchema>;

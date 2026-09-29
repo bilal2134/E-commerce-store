@@ -6,12 +6,16 @@ import type { NextConfig } from "next";
  * strict allow-list CSP with 'unsafe-inline' for Next.js' inline bootstrap
  * scripts. React escapes all rendered data and no user HTML is ever rendered.
  * See docs/architecture/security.md.
+ *
+ * NOTE: these headers are computed at build time (like the prerendered pages,
+ * which embed media URLs). Changing MEDIA_BASE_URL or the analytics provider
+ * therefore requires a rebuild.
  */
 function contentSecurityPolicy(): string {
   const media = process.env.MEDIA_BASE_URL ? new URL(process.env.MEDIA_BASE_URL).origin : "";
   const analytics =
-    process.env.ANALYTICS_PROVIDER === "plausible" && process.env.PLAUSIBLE_SCRIPT_URL
-      ? new URL(process.env.PLAUSIBLE_SCRIPT_URL).origin
+    process.env.ANALYTICS_PROVIDER === "plausible"
+      ? new URL(process.env.PLAUSIBLE_SCRIPT_URL || "https://plausible.io/js/script.js").origin
       : "";
   const dev = process.env.NODE_ENV !== "production";
   return [
@@ -62,7 +66,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       // Image uploads go through Server Actions; the browser pre-resizes
       // photos, so real payloads are ~0.3–2 MB. Server enforces 10 MB/image.
-      bodySizeLimit: "12mb",
+      bodySizeLimit: "11mb",
     },
   },
   async headers() {

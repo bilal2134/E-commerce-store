@@ -18,7 +18,7 @@ export function connect() {
   const sql = postgres(requireEnv("DATABASE_URL"), {
     max: 2,
     prepare: process.env.DATABASE_PREPARE !== "false",
-    ssl: process.env.DATABASE_SSL && process.env.DATABASE_SSL !== "disable" ? "require" : false,
+    ssl: sslMode(process.env.DATABASE_SSL),
     onnotice: () => {},
   });
   return { sql, db: drizzle(sql, { schema, casing: "snake_case" }) };
@@ -34,4 +34,11 @@ export function scriptStorage() {
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
     publicBaseUrl: requireEnv("MEDIA_BASE_URL"),
   });
+}
+
+/** DATABASE_SSL: disable | require | verify-full (verify-full checks the server certificate). */
+function sslMode(value: string | undefined): "verify-full" | "require" | false {
+  if (value === "verify-full") return "verify-full";
+  if (value === "require") return "require";
+  return false;
 }

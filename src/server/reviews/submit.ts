@@ -1,6 +1,6 @@
 import "server-only";
 import type { PublicReviewInput } from "@/domain/validation/public-review";
-import { consumeRateLimit } from "../auth/rate-limit";
+import { consumeRateLimit, pruneRateLimits, shouldRunHousekeeping } from "../auth/rate-limit";
 import type { Database } from "../db/client";
 import { reviews } from "../db/schema";
 
@@ -18,6 +18,7 @@ export async function submitCustomerReview(
   input: PublicReviewInput,
   ipKey: string,
 ): Promise<SubmitReviewResult> {
+  if (shouldRunHousekeeping()) await pruneRateLimits(database).catch(() => {});
   const bucket = ipKey === "unknown" ? REVIEW_LIMITS.shared : REVIEW_LIMITS.perIp;
   const limit = await consumeRateLimit(database, `review:${ipKey}`, bucket.limit, bucket.windowSeconds);
   if (!limit.allowed) return { ok: false, reason: "rate_limited" };

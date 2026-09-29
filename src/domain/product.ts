@@ -45,3 +45,11 @@ export function requiresSize(product: Pick<ProductDetail, "sizes">): boolean {
 export function defaultImageAlt(productName: string, index: number, total: number): string {
   return total > 1 ? `${productName} — photo ${index + 1} of ${total}` : productName;
 }
+
+/**
+ * Badge to display: the admin's choice, or "Collab" for collab items without
+ * one, so collab products are always marked (Flow C-4 step 3).
+ */
+export function displayBadge(product: Pick<ProductCard, "badge" | "collabPartner">): Badge | null {
+  return product.badge ?? (product.collabPartner ? "collab" : null);
+}

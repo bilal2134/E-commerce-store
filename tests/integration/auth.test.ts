@@ -184,13 +184,13 @@ describe("authenticateAdmin", () => {
   it("rejects an empty password", async () => {
     expect(await login({ password: "" })).toEqual({ ok: false, reason: "invalid_credentials" });
   });
-  it("rate limits an account after 8 attempts, even across IPs", async () => {
-    expect(LOGIN_LIMITS.perAccount.limit).toBe(8);
+  it("blocks an account+IP pair after 8 failed attempts", async () => {
+    expect(LOGIN_LIMITS.failuresPerAccountIp.limit).toBe(8);
     for (let i = 0; i < 8; i++) {
-      const r = await login({ password: "wrong password here", ipKey: `10.0.0.${i}` });
+      const r = await login({ password: "wrong password here", ipKey: "10.0.0.1" });
       expect(r).toEqual({ ok: false, reason: "invalid_credentials" });
     }
-    const blocked = await login({ ipKey: "10.0.1.1" });
+    const blocked = await login({ ipKey: "10.0.0.1" });
     expect(blocked.ok).toBe(false);
     if (!blocked.ok) {
       expect(blocked.reason).toBe("rate_limited");
@@ -200,14 +200,35 @@ describe("authenticateAdmin", () => {
       }
     }
   });
-  it("does not let a different account's attempts block this one", async () => {
-    for (let i = 0; i < 8; i++) await login({ email: "other@usba.test", ipKey: `10.1.0.${i}` });
-    expect((await login({ email: "other@usba.test", ipKey: "10.1.1.1" })).ok).toBe(false);
+  it("an attacker's failures cannot lock the owner out from another IP", async () => {
+    for (let i = 0; i < 8; i++) await login({ password: "wrong password here", ipKey: "10.9.9.9" });
+    expect((await login({ ipKey: "10.9.9.9" })).ok).toBe(false);
     expect(await login({ ipKey: "10.1.2.2" })).toEqual({ ok: true, adminId });
+  });
+  it("successful logins do not use up the failure budget", async () => {
+    for (let i = 0; i < 10; i++) expect((await login({ ipKey: "10.2.0.1" })).ok).toBe(true);
+  });
+  it("caps failures for one account across all IPs", async () => {
+    const cap = LOGIN_LIMITS.failuresPerAccount.limit;
+    for (let i = 0; i < cap; i++) {
+      await login({ password: "wrong password here", ipKey: `10.3.${Math.floor(i / 200)}.${i % 200}` });
+    }
+    expect(await login({ ipKey: "10.4.0.1" })).toMatchObject({ ok: false, reason: "rate_limited" });
+  });
+  it("does not let a different account's failures block this one", async () => {
+    for (let i = 0; i < 8; i++)
+      await login({ email: "other@usba.test", password: "nope nope nope", ipKey: "10.1.0.1" });
+    expect((await login({ email: "other@usba.test", ipKey: "10.1.0.1" })).ok).toBe(false);
+    expect(await login({ ipKey: "10.1.0.1" })).toEqual({ ok: true, adminId });
   });
   it("rate limits a single IP after 20 attempts", async () => {
     for (let i = 0; i < 20; i++) await login({ email: `user${i}@usba.test`, password: "nope nope nope" });
     const r = await login({ email: "fresh@usba.test" });
     expect(r).toMatchObject({ ok: false, reason: "rate_limited" });
+  });
+  it("skips the per-IP bucket when the client IP is unknown", async () => {
+    for (let i = 0; i < 25; i++)
+      await login({ email: `anon${i}@usba.test`, password: "nope nope nope", ipKey: "unknown" });
+    expect(await login({ ipKey: "unknown" })).toEqual({ ok: true, adminId });
   });
 }, 120_000);

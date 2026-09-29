@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { COLOR_LABELS, STOCK_STATUS_LABELS } from "@/domain/catalog";
 import type { Crumb } from "@/domain/category";
 import { pickVariant } from "@/domain/images";
+import { displayBadge } from "@/domain/product";
 import { formatPkr, priceInfo } from "@/domain/money";
 import { sortProducts } from "@/domain/listing";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/structured-data";
@@ -104,7 +105,7 @@ export default async function ProductPage({ params }: PageProps<"/product/[slug]
 
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]">
-              {product.badge ? <BadgeTag badge={product.badge} className="mb-3" /> : null}
+              {displayBadge(product) ? <BadgeTag badge={displayBadge(product)!} className="mb-3" /> : null}
               <h1 className="type-title text-[2rem] leading-tight md:text-4xl">{product.name}</h1>
               {product.collabPartner ? (
                 <p className="mt-2 text-sm text-ink-soft">

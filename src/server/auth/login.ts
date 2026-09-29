@@ -3,12 +3,32 @@ import { eq, sql } from "drizzle-orm";
 import type { Database } from "../db/client";
 import { adminUsers } from "../db/schema";
 import { dummyPasswordHash, verifyPassword } from "./password";
-import { consumeRateLimit } from "./rate-limit";
+import {
+  consumeRateLimit,
+  peekRateLimit,
+  pruneRateLimits,
+  shouldRunHousekeeping,
+  windowRetryAfter,
+} from "./rate-limit";
+import { pruneSessions } from "./session";
 import { sha256Hex } from "./tokens";
 
+const WINDOW = 15 * 60;
+
+/**
+ * Brute-force limits (docs/architecture/security.md):
+ * - perIp: every attempt from one client IP (skipped when the IP is unknown,
+ *   so one shared bucket can't lock everybody out).
+ * - failuresPerAccountIp: *failed* attempts for one account from one IP —
+ *   the tight limit an attacker hits.
+ * - failuresPerAccount: failed attempts for one account from anywhere — a
+ *   loose global cap. Successful logins never count, so an attacker cannot
+ *   lock the owner out by spending the owner's budget from their own IP.
+ */
 export const LOGIN_LIMITS = {
-  perIp: { limit: 20, windowSeconds: 15 * 60 },
-  perAccount: { limit: 8, windowSeconds: 15 * 60 },
+  perIp: { limit: 20, windowSeconds: WINDOW },
+  failuresPerAccountIp: { limit: 8, windowSeconds: WINDOW },
+  failuresPerAccount: { limit: 100, windowSeconds: WINDOW },
 } as const;
 
 export type LoginResult =
@@ -26,28 +46,33 @@ export async function authenticateAdmin(
   input: { email: string; password: string; ipKey: string },
 ): Promise<LoginResult> {
   const email = input.email.trim().toLowerCase();
+  const accountKey = sha256Hex(email).slice(0, 32);
+  const failAccountIpKey = `login:fail:${accountKey}:${input.ipKey}`;
+  const failAccountKey = `login:fail:${accountKey}`;
 
-  const ipCheck = await consumeRateLimit(
-    database,
-    `login:ip:${input.ipKey}`,
-    LOGIN_LIMITS.perIp.limit,
-    LOGIN_LIMITS.perIp.windowSeconds,
-  );
-  const accountCheck = await consumeRateLimit(
-    database,
-    `login:acct:${sha256Hex(email).slice(0, 32)}`,
-    LOGIN_LIMITS.perAccount.limit,
-    LOGIN_LIMITS.perAccount.windowSeconds,
-  );
-  if (!ipCheck.allowed || !accountCheck.allowed) {
-    return {
-      ok: false,
-      reason: "rate_limited",
-      retryAfterSeconds: Math.max(
-        ipCheck.allowed ? 0 : ipCheck.retryAfterSeconds,
-        accountCheck.allowed ? 0 : accountCheck.retryAfterSeconds,
-      ),
-    };
+  if (shouldRunHousekeeping()) {
+    await Promise.all([pruneRateLimits(database), pruneSessions(database)]).catch(() => {});
+  }
+
+  if (input.ipKey !== "unknown") {
+    const ip = await consumeRateLimit(
+      database,
+      `login:ip:${input.ipKey}`,
+      LOGIN_LIMITS.perIp.limit,
+      LOGIN_LIMITS.perIp.windowSeconds,
+    );
+    if (!ip.allowed) return { ok: false, reason: "rate_limited", retryAfterSeconds: ip.retryAfterSeconds };
+  }
+
+  const [accountIpFailures, accountFailures] = await Promise.all([
+    peekRateLimit(database, failAccountIpKey, WINDOW),
+    peekRateLimit(database, failAccountKey, WINDOW),
+  ]);
+  if (
+    accountIpFailures >= LOGIN_LIMITS.failuresPerAccountIp.limit ||
+    accountFailures >= LOGIN_LIMITS.failuresPerAccount.limit
+  ) {
+    return { ok: false, reason: "rate_limited", retryAfterSeconds: windowRetryAfter(WINDOW) };
   }
 
   const [admin] = await database
@@ -56,12 +81,17 @@ export async function authenticateAdmin(
     .where(eq(sql`lower(${adminUsers.email})`, email))
     .limit(1);
 
-  if (!admin) {
-    await verifyPassword(await dummyPasswordHash(), input.password);
+  const valid = admin
+    ? await verifyPassword(admin.passwordHash, input.password)
+    : await verifyPassword(await dummyPasswordHash(), input.password).then(() => false);
+
+  if (!admin || !valid) {
+    await Promise.all([
+      consumeRateLimit(database, failAccountIpKey, LOGIN_LIMITS.failuresPerAccountIp.limit, WINDOW),
+      consumeRateLimit(database, failAccountKey, LOGIN_LIMITS.failuresPerAccount.limit, WINDOW),
+    ]);
     return { ok: false, reason: "invalid_credentials" };
   }
-  const valid = await verifyPassword(admin.passwordHash, input.password);
-  if (!valid) return { ok: false, reason: "invalid_credentials" };
 
   await database.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, admin.id));
   return { ok: true, adminId: admin.id };

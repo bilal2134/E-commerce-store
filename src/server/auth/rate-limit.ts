@@ -32,6 +32,27 @@ export async function consumeRateLimit(
   return { allowed: count <= limit, count, retryAfterSeconds };
 }
 
+/** Current count in the active window, without incrementing. */
+export async function peekRateLimit(database: Database, key: string, windowSeconds: number): Promise<number> {
+  const windowMs = windowSeconds * 1000;
+  const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs);
+  const rows = await database.execute<{ count: number }>(sql`
+    select count from rate_limits where key = ${key} and window_start = ${windowStart.toISOString()}
+  `);
+  return Number(rows[0]?.count ?? 0);
+}
+
+export function windowRetryAfter(windowSeconds: number): number {
+  const windowMs = windowSeconds * 1000;
+  const now = Date.now();
+  return Math.max(1, Math.ceil((Math.floor(now / windowMs) * windowMs + windowMs - now) / 1000));
+}
+
+/** Run housekeeping on roughly 1 in `oneIn` calls (no scheduler needed). */
+export function shouldRunHousekeeping(oneIn = 50): boolean {
+  return Math.random() < 1 / oneIn;
+}
+
 /** Housekeeping: drop windows older than a day. Called opportunistically. */
 export async function pruneRateLimits(database: Database): Promise<void> {
   await database.execute(sql`delete from rate_limits where window_start < now() - interval '1 day'`);

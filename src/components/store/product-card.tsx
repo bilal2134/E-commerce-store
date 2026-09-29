@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ProductCard as ProductCardData } from "@/domain/product";
+import { displayBadge, type ProductCard as ProductCardData } from "@/domain/product";
 import { cn } from "@/lib/cn";
 import { BadgeTag, StockTag } from "./badge-tag";
 import { Price } from "./price";
@@ -24,6 +24,7 @@ export function ProductCard({
 }) {
   const Heading = headingLevel;
   const soldOut = product.stockStatus === "out_of_stock";
+  const badge = displayBadge(product);
   return (
     <article className="group relative flex flex-col">
       <div className="relative aspect-[4/5] overflow-hidden bg-blush">
@@ -47,7 +48,7 @@ export function ProductCard({
           />
         ) : null}
         <div className="pointer-events-none absolute start-2 top-2 flex flex-col items-start gap-1">
-          {product.badge ? <BadgeTag badge={product.badge} /> : null}
+          {badge ? <BadgeTag badge={badge} /> : null}
           {product.stockStatus !== "in_stock" ? <StockTag status={product.stockStatus} /> : null}
         </div>
       </div>

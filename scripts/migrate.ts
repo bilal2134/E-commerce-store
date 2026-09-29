@@ -11,7 +11,7 @@ async function main() {
   if (!url) throw new Error("DATABASE_URL is required");
   const sql = postgres(url, {
     max: 1,
-    ssl: process.env.DATABASE_SSL && process.env.DATABASE_SSL !== "disable" ? "require" : false,
+    ssl: sslMode(process.env.DATABASE_SSL),
     onnotice: () => {},
   });
   await migrate(drizzle(sql), { migrationsFolder: "./drizzle" });
@@ -23,3 +23,10 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+
+/** DATABASE_SSL: disable | require | verify-full (verify-full checks the server certificate). */
+function sslMode(value: string | undefined): "verify-full" | "require" | false {
+  if (value === "verify-full") return "verify-full";
+  if (value === "require") return "require";
+  return false;
+}
