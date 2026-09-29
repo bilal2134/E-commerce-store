@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { logoutAction } from "@/app/admin/sign-in";
 import { CloseIcon, LogoutIcon, MenuIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
@@ -45,6 +45,19 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   );
 }
 
+/** usePathname reads request data, so it sits behind Suspense to keep the shell prerenderable. */
+function CurrentNav({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <Suspense fallback={<NavLinks pathname="" onNavigate={onNavigate} />}>
+      <PathNav onNavigate={onNavigate} />
+    </Suspense>
+  );
+}
+
+function PathNav({ onNavigate }: { onNavigate?: () => void }) {
+  return <NavLinks pathname={usePathname()} onNavigate={onNavigate} />;
+}
+
 function SecondaryLinks() {
   return (
     <div className="flex flex-col gap-1 border-t border-line pt-3">
@@ -71,11 +84,7 @@ function SecondaryLinks() {
 }
 
 export function AdminShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  // The menu is open only for the path it was opened on, so navigating closes it.
-  const [openFor, setOpenFor] = useState<string | null>(null);
-  const open = openFor === pathname;
-  const setOpen = (next: boolean) => setOpenFor(next ? pathname : null);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
@@ -85,7 +94,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="type-title block text-xl">USBA</span>
             <span className="text-xs text-muted">Store admin</span>
           </Link>
-          <NavLinks pathname={pathname} />
+          <CurrentNav />
           <div className="mt-auto">
             <SecondaryLinks />
           </div>
@@ -111,7 +120,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </button>
           </div>
           <div id="admin-mobile-menu" hidden={!open} className="border-t border-line p-3">
-            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
+            <CurrentNav onNavigate={() => setOpen(false)} />
             <div className="mt-3">
               <SecondaryLinks />
             </div>
