@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+/*
+ * USBA design tokens. Every colour, type size, radius, shadow and motion
+ * value used in the UI is defined here and exposed as Tailwind utilities.
+ * See docs/design-system.md for usage rules.
+ */
+@theme {
+  /* Colour — base palette */
+  --color-petal: #fbf6f7; /* page background: pink-white */
+  --color-surface: #ffffff; /* raised surfaces: sheets, inputs, admin panels */
+  --color-blush: #f8e4ea; /* quiet tinted surface */
+  --color-ballet: #f2c9d4; /* soft pink accent surface */
+  --color-mist: #eae4f0; /* lilac-grey hairlines on tinted areas */
+  --color-line: #e7dbe0; /* default borders */
+  --color-line-strong: #cdbcc4;
+  --color-ink: #2a1520; /* primary text: aubergine */
+  --color-ink-soft: #5c4652; /* secondary text (7:1 on petal) */
+  --color-muted: #6e5a64; /* tertiary text (5.9:1 on petal) */
+  --color-cherry: #a8123a; /* brand accent, primary actions */
+  --color-cherry-deep: #850e2e; /* hover/active */
+  --color-cherry-tint: #fbe8ed;
+
+  /* Colour — semantic */
+  --color-success: #2e6b4e;
+  --color-success-tint: #e3f1ea;
+  --color-warning: #8a5300;
+  --color-warning-tint: #fbefd9;
+  --color-danger: #b42318;
+  --color-danger-tint: #fdecea;
+  --color-whatsapp: #1c7a4a; /* darkened WhatsApp green for AA contrast with white */
+  --color-whatsapp-deep: #155f39;
+
+  /* Type */
+  --font-display: var(--font-bodoni), "Bodoni 72", Didot, Georgia, serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.3125rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 2.375rem;
+  --text-4xl: 2.875rem;
+  --text-4xl--line-height: 3rem;
+  --text-5xl: 3.75rem;
+  --text-5xl--line-height: 3.75rem;
+  --text-6xl: 5rem;
+  --text-6xl--line-height: 4.75rem;
+
+  --tracking-display: -0.02em;
+
+  /* Radius: photos are square-cornered; UI is barely softened. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Elevation: only overlays (drawers, dialogs, popovers) cast shadows. */
+  --shadow-overlay: 0 18px 48px -16px rgb(42 21 32 / 0.32), 0 2px 6px rgb(42 21 32 / 0.06);
+  --shadow-bar: 0 -6px 24px -12px rgb(42 21 32 / 0.25);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+
+  --breakpoint-xs: 25rem;
+}
+
+@layer base {
+  :root {
+    --header-height: 3.5rem;
+    color-scheme: light;
+  }
+  @media (min-width: 64rem) {
+    :root {
+      --header-height: 4.25rem;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    /* Keep focused elements clear of the sticky header (WCAG 2.4.11). */
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+    scroll-padding-bottom: 6rem;
+  }
+
+  body {
+    background: var(--color-petal);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-ballet);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-cherry);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  button,
+  [role="button"],
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Display typography: the one loud element of the system. */
+  .type-display {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: var(--tracking-display);
+    font-variation-settings: "opsz" 96;
+    text-wrap: balance;
+  }
+  .type-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    font-variation-settings: "opsz" 28;
+    text-wrap: balance;
+  }
+  .prose-body {
+    max-width: 65ch;
+    text-wrap: pretty;
+  }
+  .prose-body p + p {
+    margin-top: 1em;
+  }
+
+  /* Horizontal scroller that hides its scrollbar but keeps it accessible. */
+  .scroller {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroller::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 90rem;
+  padding-inline: 1rem;
+  @media (min-width: 48rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 80rem) {
+    padding-inline: 2.5rem;
+  }
+}

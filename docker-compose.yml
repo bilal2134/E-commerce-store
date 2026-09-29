@@ -1,0 +1,43 @@
+# Local development infrastructure. Provider-neutral: plain PostgreSQL + an
+# S3-compatible object store. Production swaps these for managed services
+# (Supabase/Neon/RDS Postgres and Supabase Storage/R2/S3) via env vars only.
+name: usba
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: usba
+      POSTGRES_PASSWORD: usba_dev_password
+      POSTGRES_DB: usba
+    ports:
+      - "54329:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usba -d usba"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # RustFS: Apache-2.0, S3-compatible object storage (MinIO no longer publishes
+  # community Docker images). Only used for local development and CI.
+  storage:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: usba_dev_access
+      RUSTFS_SECRET_KEY: usba_dev_secret_key
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    volumes:
+      - storage-data:/data
+    command: ["/data"]
+
+volumes:
+  db-data:
+  storage-data:
