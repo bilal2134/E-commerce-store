@@ -46,7 +46,7 @@ Postgres fixed-window counters (`rate_limits`): login 20 attempts per IP and 8 p
 
 ## Secrets
 
-Server-only typed `env()`; no `NEXT_PUBLIC_*`; `.env*` in `.gitignore` (only `.env.example` is committed); `.dockerignore` excludes `.env*`. Build args exist only in the build stage of the Dockerfile and are not in the final image, but they can appear in build logs of some hosts: use provider secret stores and rotate on suspicion. Logger redacts keys matching `pass|secret|token|authorization|cookie|session|key`. If a secret is committed, rotate it immediately.
+Server-only typed `env()`; no `NEXT_PUBLIC_*`; `.env*` in `.gitignore` (only `.env.example` is committed); `.dockerignore` excludes `.env*`. The Docker build receives its environment as a BuildKit secret mount (never an ARG/ENV, never in a layer); the Next standalone copy of `.env` is deleted in the same RUN step, verified by inspecting the image (no `.env`, no credential strings under `/app`). Use provider secret stores and rotate on suspicion. Logger redacts keys matching `pass|secret|token|authorization|cookie|session|key`. If a secret is committed, rotate it immediately.
 
 ## SQL injection
 

@@ -13,7 +13,7 @@ Source: docs/research/hosting.md section 4 (checked 2026-09-30). The Starter pri
 1. Push the repo to GitHub/GitLab.
 2. Render Dashboard -> New -> Blueprint -> select the repo; it reads `render.yaml`.
 3. Fill in every `sync: false` variable (`SITE_URL`, `DATABASE_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `MEDIA_BASE_URL`). See current.md for the table.
-4. Docker builds receive service environment variables as build args; the Dockerfile declares an `ARG` for each variable needed at build time (SITE_URL, DATABASE_URL, S3_*, MEDIA_BASE_URL, ...). Confirm in the first build log that `next build` prerendered pages without env errors. (Verify against Render's current Docker build-arg behaviour if the build reports missing variables.)
+4. The Dockerfile expects the build-time environment as a BuildKit secret with id `buildenv` (an env file). On Render, add a **Secret File** named `buildenv` containing the same variables as the service env (SITE_URL, DATABASE_URL, S3_*, MEDIA_BASE_URL, ...); Render exposes secret files to Docker builds as BuildKit secrets with the file name as id. Confirm in the first build log that `next build` prerendered pages. (Unverified on Render itself; verified locally with `docker build --secret`.)
 5. Before the first deploy, run migrations once from your machine (`DATABASE_URL=... pnpm db:migrate`) because the build prerenders against the DB and runs before `preDeployCommand`. After that, `preDeployCommand: node scripts/migrate.mjs` applies new migrations on every deploy, before the new instance receives traffic.
 6. Add the custom domain in Render (managed TLS), then set `SITE_URL` to it and redeploy.
 7. Health check path is `/api/health`.

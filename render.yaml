@@ -10,7 +10,7 @@ services:
     autoDeployTrigger: commit
     preDeployCommand: node scripts/migrate.mjs
     # Cache Components prerenders at build time, so these are needed both at
-    # build (passed to Docker as build args) and at runtime.
+    # build (via the `buildenv` Secret File, a BuildKit secret) and at runtime.
     envVars:
       - key: SITE_URL
         sync: false

@@ -40,7 +40,7 @@ Goal: move Postgres, storage or hosting by changing environment variables and ru
 
 ## Moving hosting
 
-The deploy unit is the Docker image built from `Dockerfile`. Any host that runs a container and provides env vars works (Render, ECS/Fargate, Fly, a VPS). Steps: build the image with build args, push, run `node scripts/migrate.mjs` as a pre-deploy step, start `node server.js`, point the health check at `/api/health`, move DNS. Vercel works (docs/deployment/vercel.md); Cloudflare Workers does not without replacing `sharp` (docs/deployment/cloudflare.md).
+The deploy unit is the Docker image built from `Dockerfile`. Any host that runs a container and provides env vars works (Render, ECS/Fargate, Fly, a VPS). Steps: build the image with `--secret id=buildenv,src=<env file>`, push, run `node scripts/migrate.mjs` as a pre-deploy step, start `node server.js`, point the health check at `/api/health`, move DNS. Vercel works (docs/deployment/vercel.md); Cloudflare Workers does not without replacing `sharp` (docs/deployment/cloudflare.md).
 
 ## Known couplings
 
@@ -50,6 +50,6 @@ The deploy unit is the Docker image built from `Dockerfile`. Any host that runs 
 | `@node-rs/argon2` native binary                             | Same                                                                                                      | Swap behind `password.ts`                                        |
 | Next.js in-memory/disk cache                                | Single instance only                                                                                      | scaling.md                                                       |
 | `next.config.ts` reads `process.env` (CSP)                  | `MEDIA_BASE_URL`, `SITE_URL`, `ANALYTICS_PROVIDER`, `PLAUSIBLE_SCRIPT_URL` must be present at build/start | documented in deployment docs                                    |
-| Build needs DB and S3 vars                                  | CI/CD must provide them at build                                                                          | Dockerfile build args                                            |
+| Build needs DB and S3 vars                                  | CI/CD must provide them at build                                                                          | BuildKit secret env file (`buildenv`)                            |
 | Supabase Data API exposes public tables if enabled          | Security                                                                                                  | security.md                                                      |
 | `__Host-` cookie prefix requires HTTPS, no Domain attribute | Site must be served over HTTPS on a single origin                                                         | `SITE_URL=https://...`                                           |

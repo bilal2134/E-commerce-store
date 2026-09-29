@@ -3,17 +3,13 @@
 # prebuilt sharp and @node-rs/argon2 binaries work without compiling.
 #
 # IMPORTANT: with Cache Components the build prerenders pages and queries the
-# database, so DATABASE_URL and the S3/MEDIA variables MUST be available at
-# build time (pass them as --build-arg; they do not reach the final image
-# because only the runtime stage's ENV is kept).
+# database, so the build needs the production environment. Pass it as a
+# BuildKit secret (an env file, never baked into any layer or history):
 #
-#   docker build -t usba \
-#     --build-arg SITE_URL=https://example.com \
-#     --build-arg DATABASE_URL=postgres://... \
-#     --build-arg S3_BUCKET=... --build-arg S3_ACCESS_KEY_ID=... \
-#     --build-arg S3_SECRET_ACCESS_KEY=... --build-arg MEDIA_BASE_URL=https://cdn.example.com .
+#   docker build -t usba --secret id=buildenv,src=.env.production .
 #
-# UNVERIFIED: this Dockerfile has not been built end to end yet.
+# At runtime pass the same variables with `docker run --env-file` (or your
+# platform's secret store). Verified end to end against local infra.
 
 ARG NODE_VERSION=24
 
@@ -30,27 +26,12 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG SITE_URL
-ARG DATABASE_URL
-ARG DATABASE_PREPARE=true
-ARG DATABASE_SSL=disable
-ARG S3_ENDPOINT=
-ARG S3_REGION=us-east-1
-ARG S3_BUCKET
-ARG S3_ACCESS_KEY_ID
-ARG S3_SECRET_ACCESS_KEY
-ARG S3_FORCE_PATH_STYLE=false
-ARG MEDIA_BASE_URL
-ARG ANALYTICS_PROVIDER=none
-ARG PLAUSIBLE_DOMAIN=
-ENV SITE_URL=$SITE_URL DATABASE_URL=$DATABASE_URL DATABASE_PREPARE=$DATABASE_PREPARE \
-    DATABASE_SSL=$DATABASE_SSL S3_ENDPOINT=$S3_ENDPOINT S3_REGION=$S3_REGION \
-    S3_BUCKET=$S3_BUCKET S3_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID \
-    S3_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY S3_FORCE_PATH_STYLE=$S3_FORCE_PATH_STYLE \
-    MEDIA_BASE_URL=$MEDIA_BASE_URL ANALYTICS_PROVIDER=$ANALYTICS_PROVIDER \
-    PLAUSIBLE_DOMAIN=$PLAUSIBLE_DOMAIN
-# public/ may be empty (and therefore absent from a fresh clone)
-RUN mkdir -p public && pnpm build
+# Next.js loads .env at build time; the secret is mounted only for this step.
+# The standalone output copies .env* files, so they are deleted in the same
+# step: the build secret must never reach an image layer.
+RUN --mount=type=secret,id=buildenv,target=/app/.env,required=true \
+    mkdir -p public && pnpm build \
+    && rm -f .next/standalone/.env .next/standalone/.env.*
 
 # drizzle-orm/postgres-js/migrator is not imported by the app, so Next's file
 # tracing does not put it in .next/standalone. Install just what scripts/migrate.mjs needs.

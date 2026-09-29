@@ -13,7 +13,7 @@ Facts: docs/research/hosting.md (checked 2026-09-30). Price figures marked "seco
 
 ## Build-time note (all hosts)
 
-With Cache Components the production build prerenders pages and queries the database. `DATABASE_URL`, `SITE_URL`, all `S3_*` and `MEDIA_BASE_URL` must be available during `next build` (Docker build args in our Dockerfile). Pages then revalidate on the `storefront` cacheLife (stale 300 s / revalidate 900 s / expire 1 d) and on explicit tags (`catalog`, `settings`, `reviews`) via admin `updateTag()`. If the database is unreachable at build time the build fails; migrate first, then build (Render: DB migrations run in `preDeployCommand`, i.e. after build, so run migrations once manually before the very first deploy; see first-deploy checklist).
+With Cache Components the production build prerenders pages and queries the database. `DATABASE_URL`, `SITE_URL`, all `S3_*` and `MEDIA_BASE_URL` must be available during `next build`: the Dockerfile reads them from a BuildKit secret env file (`docker build --secret id=buildenv,src=.env.production .`), which never reaches an image layer (the standalone copy of `.env` is deleted in the same step; verified 2026-09-30 by inspecting the image). Pages then revalidate on the `storefront` cacheLife (stale 300 s / revalidate 900 s / expire 1 d) and on explicit tags (`catalog`, `settings`, `reviews`) via admin `updateTag()`. If the database is unreachable at build time the build fails; migrate first, then build (Render: DB migrations run in `preDeployCommand`, i.e. after build, so run migrations once manually before the very first deploy; see first-deploy checklist).
 
 ## Environment variables
 

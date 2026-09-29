@@ -18,7 +18,7 @@ Note: with S3 private behind CloudFront, uploads still work (server writes with 
 
 ## Migration steps
 
-1. Build/push: `docker build` with build args (build needs DB and S3/MEDIA vars: build in CI with network access to the staging DB or restore the DB to RDS first), push to ECR.
+1. Build/push: `docker build --secret id=buildenv,src=<env file>` (build needs DB and S3/MEDIA vars: build in CI with network access to the staging DB or restore the DB to RDS first), push to ECR.
 2. Create RDS Postgres; restore: `pg_dump -Fc "$OLD" | pg_restore --no-owner --no-acl -d "$RDS_URL"` (portability.md). Keep `DATABASE_SSL=require`.
 3. Create the S3 bucket and CloudFront; `rclone copy r2:usba-media s3:usba-media` (keys unchanged); set `MEDIA_BASE_URL` to the CloudFront domain.
 4. Create the ECS Express Mode service with the image, task role, env and secrets; health check path `/api/health`. Run `node scripts/migrate.mjs` as a one-off task (`aws ecs run-task` with a command override) before switching traffic.
