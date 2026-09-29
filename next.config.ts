@@ -57,6 +57,8 @@ const nextConfig: NextConfig = {
     storefront: { stale: 300, revalidate: 900, expire: 86400 },
   },
   experimental: {
+    // Tailwind output is small (~12 KB raw); inlining removes a render-blocking request.
+    inlineCss: true,
     serverActions: {
       // Image uploads go through Server Actions; the browser pre-resizes
       // photos, so real payloads are ~0.3–2 MB. Server enforces 10 MB/image.

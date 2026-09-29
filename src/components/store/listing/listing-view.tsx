@@ -37,7 +37,7 @@ export function ListingView({
   const cards = Object.fromEntries(
     listing.products.map((p, i) => [
       p.id,
-      <ProductCard key={p.id} product={p} priority={i < 2} headingLevel="h2" />,
+      <ProductCard key={p.id} product={p} priority={i < 2} headingLevel="h2" showHoverImage />,
     ]),
   );
 

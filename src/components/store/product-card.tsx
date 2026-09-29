@@ -13,11 +13,14 @@ export function ProductCard({
   priority = false,
   sizes = CARD_SIZES,
   headingLevel = "h3",
+  showHoverImage = false,
 }: {
   product: ProductCardData;
   priority?: boolean;
   sizes?: string;
   headingLevel?: "h2" | "h3";
+  /** Second photo on hover (pointer devices); used on listing grids only. */
+  showHoverImage?: boolean;
 }) {
   const Heading = headingLevel;
   const soldOut = product.stockStatus === "out_of_stock";
@@ -35,7 +38,7 @@ export function ProductCard({
             )}
           />
         ) : null}
-        {product.hoverImage && !soldOut ? (
+        {showHoverImage && product.hoverImage && !soldOut ? (
           <ResponsiveImg
             image={product.hoverImage}
             sizes={sizes}

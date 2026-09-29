@@ -37,7 +37,9 @@ export function ResponsiveImg({
       decoding={priority ? "sync" : "async"}
       className={cn("block h-full w-full object-cover", className)}
       style={{
-        backgroundImage: image.blurDataUrl ? `url(${image.blurDataUrl})` : undefined,
+        // Blur placeholder only for eager (above-the-fold) images; lazy images
+        // sit on the container's tinted background instead, keeping HTML small.
+        backgroundImage: priority && image.blurDataUrl ? `url(${image.blurDataUrl})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
         ...style,

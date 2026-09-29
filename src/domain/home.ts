@@ -49,7 +49,7 @@ export function buildHomeSections(catalog: Catalog): HomeSections {
   const trending = sortProducts(
     available.filter((p) => p.badge === "trending" || p.badge === "bestseller" || p.badge === "viral"),
     "featured",
-  ).slice(0, 8);
+  ).slice(0, 4);
   const collab = inStockFirst(collectionProducts(all, "collab")).slice(0, 6);
   const sale = sortProducts(collectionProducts(available, "sale"), "featured").slice(0, 10);
 

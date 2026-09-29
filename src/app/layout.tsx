@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bodoni_Moda, Hanken_Grotesk } from "next/font/google";
+import { preconnect } from "react-dom";
 import { env } from "@/server/config/env";
 import "./globals.css";
 
@@ -8,6 +9,9 @@ const bodoni = Bodoni_Moda({
   axes: ["opsz"],
   variable: "--font-bodoni",
   display: "swap",
+  // Display face: not preloaded so it never competes with the LCP image;
+  // metric-adjusted fallback keeps the swap free of layout shift.
+  preload: false,
 });
 
 const hanken = Hanken_Grotesk({
@@ -36,6 +40,9 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  // Product photos come from the media origin (bucket/CDN): open the
+  // connection early so the LCP image isn't waiting on DNS/TLS.
+  preconnect(new URL(env().MEDIA_BASE_URL).origin);
   // `dir` is explicit so a future Urdu (RTL) locale only changes this value;
   // layouts use logical properties (ms/me, ps/pe, start/end) throughout.
   return (
