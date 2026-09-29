@@ -12,6 +12,7 @@ import { db } from "@/server/db/client";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = { title: "Dashboard" };
+export const instant = false;
 
 export default async function DashboardPage() {
   await requireAdmin();

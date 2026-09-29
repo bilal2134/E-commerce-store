@@ -13,6 +13,7 @@ import { db } from "@/server/db/client";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = { title: "Orders" };
+export const instant = false;
 
 type Search = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";

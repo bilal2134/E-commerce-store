@@ -5,6 +5,7 @@ import { getCurrentAdmin } from "@/server/auth/session";
 import { LoginForm } from "./_components/login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
+export const instant = false;
 
 export default function AdminLoginPage() {
   return (

@@ -11,6 +11,7 @@ import { db } from "@/server/db/client";
 import { StatusForm } from "../_components/status-form";
 
 export const metadata: Metadata = { title: "Order" };
+export const instant = false;
 
 export default async function OrderDetailPage({
   params,

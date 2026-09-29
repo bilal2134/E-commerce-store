@@ -12,6 +12,7 @@ import { ReviewForm } from "./_components/review-form";
 import { ReviewsList, type ReviewView } from "./_components/reviews-list";
 
 export const metadata: Metadata = { title: "Reviews" };
+export const instant = false;
 
 type Search = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";

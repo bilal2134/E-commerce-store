@@ -11,6 +11,7 @@ import { thumbUrl } from "../../../_lib/media";
 import { ProductForm } from "../_components/product-form";
 
 export const metadata: Metadata = { title: "Edit product" };
+export const instant = false;
 
 export default async function EditProductPage({
   params,

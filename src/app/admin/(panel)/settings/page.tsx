@@ -7,6 +7,7 @@ import { mediumUrl } from "../../_lib/media";
 import { SettingsForm } from "./_components/settings-form";
 
 export const metadata: Metadata = { title: "Settings" };
+export const instant = false;
 
 export default async function SettingsPage() {
   await requireAdmin();

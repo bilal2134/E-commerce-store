@@ -6,6 +6,7 @@ import { db } from "@/server/db/client";
 import { OrderForm } from "../_components/order-form";
 
 export const metadata: Metadata = { title: "Add manual order" };
+export const instant = false;
 
 export default async function NewOrderPage() {
   await requireAdmin();

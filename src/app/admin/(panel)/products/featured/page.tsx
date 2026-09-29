@@ -7,6 +7,7 @@ import { thumbUrl } from "../../../_lib/media";
 import { FeaturedManager } from "../_components/featured-manager";
 
 export const metadata: Metadata = { title: "Homepage order" };
+export const instant = false;
 
 export default async function FeaturedPage() {
   await requireAdmin();

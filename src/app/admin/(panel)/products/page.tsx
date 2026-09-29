@@ -12,6 +12,7 @@ import { thumbUrl } from "../../_lib/media";
 import { ProductsTable, type ProductRowView } from "./_components/products-table";
 
 export const metadata: Metadata = { title: "Products" };
+export const instant = false;
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -96,9 +97,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         method="get"
         role="search"
         aria-label="Filter products"
-        className="mb-4 grid gap-3 rounded-sm border border-line bg-surface p-3 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto]"
+        className="mb-4 grid gap-3 rounded-sm border border-line bg-surface p-3 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <label className="block text-sm font-medium">
+        <label className="block text-sm font-medium lg:col-span-2">
           <span className="sr-only">Search by name or code</span>
           <Input type="search" name="q" defaultValue={q} placeholder="Search by name or code" />
         </label>

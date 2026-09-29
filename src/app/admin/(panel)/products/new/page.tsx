@@ -8,6 +8,7 @@ import { db } from "@/server/db/client";
 import { ProductForm } from "../_components/product-form";
 
 export const metadata: Metadata = { title: "Add product" };
+export const instant = false;
 
 export default async function NewProductPage() {
   await requireAdmin();
