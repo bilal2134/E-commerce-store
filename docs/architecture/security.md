@@ -20,7 +20,7 @@ Facts and sources: docs/research/security.md (section numbers below) and docs/re
 - Session token: 256-bit random opaque token (`tokens.ts`); only `SHA-256(token)` is stored in `admin_sessions.id`, so a DB leak does not yield usable tokens (research §4).
 - Cookie: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` on HTTPS, named `__Host-usba_admin` on HTTPS (no Domain, pinned to origin) or `usba_admin` on http (local dev only).
 - Lifetime: 24 h absolute (never extended) and 8 h idle (`last_seen_at`, written at most every 5 min). The 8 h idle timeout is an addition to the requirement (ASSUMPTIONS A-24).
-- Logout deletes the session row and the cookie, so a copied cookie stops working (AS-20). `pruneSessions()` removes expired/idle rows.
+- Logout deletes the session row and the cookie, so a copied cookie stops working (AS-20). `pruneSessions()` removes expired/idle rows (called opportunistically from login).
 - Authorization: `requireAdmin()` is called in every admin page and every admin Server Action (Server Actions are directly reachable POST endpoints). `proxy.ts` only does an optimistic redirect when the cookie is absent and is never trusted (proxy/middleware bypass CVEs, research §1-2).
 - Single owner: no roles. If more admins are added, add roles before exposing anything else.
 
@@ -42,7 +42,7 @@ Type detected by magic bytes (JPEG/PNG/WebP only), not filename or client MIME; 
 
 ## Rate limiting
 
-Postgres fixed-window counters (`rate_limits`): login 20 attempts per IP and 8 per account per 15 minutes. The IP comes from `CLIENT_IP_HEADER`, which must be set only to a header your proxy overwrites; a spoofable header defeats the per-IP limit (research §5). Public review submission (if enabled) needs the same limiter plus moderation. No Redis.
+Postgres fixed-window counters (`rate_limits`), 15-minute windows. Login: 20 attempts per client IP, 8 **failed** attempts per account+IP, 100 failed attempts per account from anywhere. Successful logins never consume the failure budget, so an attacker cannot lock the owner out from a different IP. The IP comes from `CLIENT_IP_HEADER`, read `CLIENT_IP_TRUSTED_HOPS` entries from the **right** (`src/server/client-ip.ts`), so client-supplied `X-Forwarded-For` prefixes are ignored. Without the header, per-IP login limits are skipped (to avoid a shared lockout bucket), reviews share one 30/hour bucket, and the server warns at startup in production (`src/instrumentation.ts`). Reviews: 3 per IP per hour, honeypot, moderation. Expired sessions and stale counters are pruned opportunistically (~1 in 50 logins/review submissions). No Redis.
 
 ## Secrets
 

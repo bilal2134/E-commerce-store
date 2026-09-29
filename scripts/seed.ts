@@ -77,7 +77,7 @@ async function main() {
 
   await db.execute(sql`
     truncate table order_status_events, order_items, orders, reviews, product_sizes,
-      product_images, products, categories restart identity cascade
+      product_images, products, categories, instagram_posts restart identity cascade
   `);
   await db.execute(sql`alter sequence product_code_seq restart with 1`);
   await db.execute(sql`alter sequence order_code_seq restart with 1`);

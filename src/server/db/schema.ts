@@ -388,3 +388,28 @@ export const rateLimits = pgTable(
   },
   (t) => [primaryKey({ columns: [t.key, t.windowStart] }), index("rate_limits_window_idx").on(t.windowStart)],
 );
+
+/* ------------------------------------------------------------------ */
+/* Instagram posts (CS-22): curated by the owner until Meta API access */
+/* ------------------------------------------------------------------ */
+
+export const instagramPosts = pgTable(
+  "instagram_posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postUrl: text("post_url").notNull(),
+    storageKey: text("storage_key").notNull(),
+    widths: integer("widths").array().notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    blurDataUrl: text("blur_data_url"),
+    alt: text("alt").notNull().default(""),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("instagram_posts_position_idx").on(t.position),
+    uniqueIndex("instagram_posts_storage_key_key").on(t.storageKey),
+    check("instagram_posts_url_format", sql`${t.postUrl} ~ '^https://www\.instagram\.com/'`),
+  ],
+);

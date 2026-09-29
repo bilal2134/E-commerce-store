@@ -16,7 +16,7 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const MAX_INPUT_PIXELS = 40_000_000;
 const WEBP_QUALITY = 78;
 
-export type ImageFolder = "products" | "banners" | "reviews";
+export type ImageFolder = "products" | "banners" | "reviews" | "instagram";
 
 export class ImageValidationError extends Error {
   constructor(message: string) {

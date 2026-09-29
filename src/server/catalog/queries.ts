@@ -6,7 +6,15 @@ import type { ResponsiveImage } from "@/domain/images";
 import type { Catalog, CategoryTree } from "@/domain/category";
 import { defaultImageAlt, type ProductCard, type ProductDetail } from "@/domain/product";
 import type { Database } from "../db/client";
-import { categories, productImages, products, productSizes, reviews, siteSettings } from "../db/schema";
+import {
+  categories,
+  instagramPosts,
+  productImages,
+  products,
+  productSizes,
+  reviews,
+  siteSettings,
+} from "../db/schema";
 
 /**
  * Raw read queries. Pure data access (no Next.js caching) so they can be
@@ -369,4 +377,27 @@ export async function fetchVisibleProductSlugs(
     .where(eq(products.isVisible, true))
     .orderBy(asc(products.slug));
   return rows.map((r) => ({ slug: r.slug, updatedAt: r.updatedAt.toISOString() }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Instagram (CS-22)                                                   */
+/* ------------------------------------------------------------------ */
+
+export interface PublicInstagramPost {
+  id: string;
+  postUrl: string;
+  image: ResponsiveImage;
+}
+
+export async function fetchInstagramPosts(ctx: QueryContext, limit = 9): Promise<PublicInstagramPost[]> {
+  const rows = await ctx.db
+    .select()
+    .from(instagramPosts)
+    .orderBy(asc(instagramPosts.position), asc(instagramPosts.createdAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.id,
+    postUrl: r.postUrl,
+    image: toResponsiveImage(ctx, r, "USBA Instagram post"),
+  }));
 }

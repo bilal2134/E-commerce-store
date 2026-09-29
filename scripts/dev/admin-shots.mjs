@@ -9,16 +9,11 @@ await page.getByLabel(/email/i).fill(process.env.ADMIN_EMAIL ?? "owner@example.c
 await page.getByLabel(/password/i).fill(process.env.ADMIN_PASSWORD ?? "local-dev-password-123");
 await page.getByRole("button", { name: "Sign in" }).click();
 await page.waitForURL(/dashboard/);
-for (const path of [
-  "dashboard",
-  "products",
-  "products/new",
-  "orders",
-  "orders/new",
-  "reviews",
-  "settings",
-  "products/featured",
-]) {
+const pages = (
+  process.env.ADMIN_PAGES ??
+  "dashboard,products,products/new,orders,orders/new,reviews,settings,products/featured,instagram"
+).split(",");
+for (const path of pages) {
   await page.goto(`${base}/admin/${path}`, { waitUntil: "networkidle" });
   await page.screenshot({ path: `.cache/admin-${path.replace("/", "-")}-${width}.png`, fullPage: true });
 }

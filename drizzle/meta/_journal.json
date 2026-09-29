@@ -15,6 +15,13 @@
       "when": 1790714623411,
       "tag": "0001_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790719797161,
+      "tag": "0002_instagram_posts",
+      "breakpoints": true
     }
   ]
 }

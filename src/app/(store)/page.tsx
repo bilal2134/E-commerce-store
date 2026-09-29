@@ -2,7 +2,7 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { buildHomeSections } from "@/domain/home";
 import { env } from "@/server/config/env";
-import { getApprovedReviews, getCatalog, getSettings } from "@/server/catalog/public";
+import { getApprovedReviews, getCatalog, getInstagramPosts, getSettings } from "@/server/catalog/public";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 import { ButtonLink } from "@/components/ui/button";
 import { ClockIcon, InstagramIcon, RulerIcon, WhatsappIcon } from "@/components/ui/icons";
@@ -17,7 +17,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [catalog, settings, reviews] = await Promise.all([getCatalog(), getSettings(), getApprovedReviews()]);
+  const [catalog, settings, reviews, instagram] = await Promise.all([
+    getCatalog(),
+    getSettings(),
+    getApprovedReviews(),
+    getInstagramPosts(),
+  ]);
   const home = buildHomeSections(catalog);
   const siteUrl = env().SITE_URL;
   const heroProducts = home.featured.filter((p) => p.image).slice(0, 2);
@@ -248,14 +253,12 @@ export default async function HomePage() {
 
       {settings.instagramHandle ? (
         <Section labelledBy="instagram-title">
-          <div className="flex flex-col items-start gap-4 border-t border-line pt-10 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col items-start gap-4 border-t border-line pt-10 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 id="instagram-title" className="type-title text-3xl">
                 @{settings.instagramHandle}
               </h2>
-              <p className="mt-2 text-sm text-ink-soft">
-                New drops and restocks are posted on Instagram first.
-              </p>
+              <p className="mt-2 text-sm text-ink-soft">Follow USBA on Instagram for new drops.</p>
             </div>
             <a
               href={buildInstagramProfileUrl(settings.instagramHandle)}
@@ -267,6 +270,28 @@ export default async function HomePage() {
               Follow on Instagram
             </a>
           </div>
+          {/* CS-22: owner-curated posts (the Instagram API needs Meta app credentials; ADR/ASSUMPTIONS A-16). */}
+          {instagram.length ? (
+            <ul aria-label="Latest Instagram posts" className="mt-6 grid grid-cols-3 gap-1 sm:gap-2">
+              {instagram.map((post) => (
+                <li key={post.id}>
+                  <a
+                    href={post.postUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative block aspect-square overflow-hidden bg-blush"
+                  >
+                    <ResponsiveImg
+                      image={post.image}
+                      sizes="(min-width: 80rem) 470px, 33vw"
+                      className="transition-opacity group-hover:opacity-90"
+                    />
+                    <span className="sr-only"> (opens Instagram)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </Section>
       ) : null}
     </>

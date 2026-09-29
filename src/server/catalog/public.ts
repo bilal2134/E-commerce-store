@@ -8,11 +8,13 @@ import { mediaBaseUrl } from "../storage";
 import {
   fetchApprovedReviews,
   fetchCatalog,
+  fetchInstagramPosts,
   fetchSettingsRow,
   fetchVisibleProductBySlug,
   fetchVisibleProductSlugs,
   fetchVisibleSlugByCode,
   toPublicSettings,
+  type PublicInstagramPost,
   type PublicReview,
   type PublicSettings,
   type QueryContext,
@@ -71,4 +73,12 @@ export async function getApprovedReviews(): Promise<PublicReview[]> {
   return fetchApprovedReviews(ctx());
 }
 
-export type { PublicReview, PublicSettings };
+/** Curated Instagram posts; edited with settings, so they share the tag. */
+export async function getInstagramPosts(): Promise<PublicInstagramPost[]> {
+  "use cache";
+  cacheLife("storefront");
+  cacheTag(CACHE_TAGS.settings);
+  return fetchInstagramPosts(ctx());
+}
+
+export type { PublicInstagramPost, PublicReview, PublicSettings };
