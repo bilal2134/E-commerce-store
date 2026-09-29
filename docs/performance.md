@@ -14,6 +14,8 @@ Lighthouse 13.5 mobile preset (Moto G Power emulation, **simulated slow 4G: 1.6 
 
 \* The 95 was a missing accessible name on the mobile sort select, fixed afterwards (axe E2E now clean).
 
+**Final re-measurement after all audit fixes (same method, 2026-09-30):** home 93 / listing 93 / product 93 performance, accessibility 100, best practices 100, SEO 100 on all three; LCP 3.2 s (simulated slow 4G), TBT 50–60 ms, CLS 0. Repeated home runs ranged 76–93: the low run was a TBT spike (580 ms) from load on the shared development machine, not a code change; judge with field data after launch.
+
 First measurement before optimisation: home 72 (LCP 4.4 s, TBT 520 ms). Changes that moved it: inlined CSS (removes the render-blocking stylesheet), preconnect to the media origin, blur placeholders only for eager images, hover images only on listing grids, fewer homepage cards, display font not preloaded (no longer competes with the LCP image), 26 KB `favicon.ico` replaced by a 0.3 KB SVG.
 
 Interpretation: "slow 4G" in Lighthouse is harsher than typical Pakistani 4G. LCP there is ~3.1 s; on a regular 4G link (≈9 Mbps / 70 ms) the same waterfall finishes well under 2 s. Field data (CrUX / RUM) must confirm after launch.
