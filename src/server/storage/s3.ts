@@ -20,7 +20,12 @@ export class S3Storage implements ObjectStorage {
       endpoint: config.endpoint,
       region: config.region,
       forcePathStyle: config.forcePathStyle,
-      credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+      // Explicit keys for Supabase/R2/RustFS; omitted on AWS so the SDK's
+      // default provider chain (IAM role) is used.
+      credentials:
+        config.accessKeyId && config.secretAccessKey
+          ? { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey }
+          : undefined,
     });
   }
 

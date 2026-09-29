@@ -29,8 +29,8 @@ export function scriptStorage() {
     endpoint: process.env.S3_ENDPOINT || undefined,
     region: process.env.S3_REGION || "us-east-1",
     bucket: requireEnv("S3_BUCKET"),
-    accessKeyId: requireEnv("S3_ACCESS_KEY_ID"),
-    secretAccessKey: requireEnv("S3_SECRET_ACCESS_KEY"),
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
     publicBaseUrl: requireEnv("MEDIA_BASE_URL"),
   });

@@ -127,3 +127,12 @@ export function searchDocs<T extends SearchDoc>(
   }
   return hits.sort((a, b) => b.score - a.score).slice(0, limit);
 }
+
+/** Compact entry served by /api/search-index for live suggestions. */
+export interface SearchIndexItem extends SearchDoc {
+  pricePkr: number;
+  salePricePkr: number | null;
+  /** Small thumbnail URL (smallest variant) or null. */
+  thumbUrl: string | null;
+  stockStatus: "in_stock" | "out_of_stock" | "preorder";
+}

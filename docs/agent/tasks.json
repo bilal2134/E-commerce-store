@@ -1,0 +1,150 @@
+[
+  {
+    "id": "T-001",
+    "title": "Scaffold, domain, schema, auth primitives, storage, images, seed",
+    "phase": "1",
+    "status": "done",
+    "dependsOn": [],
+    "files": [
+      "src/domain/**",
+      "src/server/**",
+      "drizzle/**",
+      "scripts/**",
+      "docker-compose.yml",
+      "next.config.ts"
+    ],
+    "verification": "pnpm typecheck; pnpm test:unit",
+    "remaining": "Confirm pnpm verify passes after storefront lands"
+  },
+  {
+    "id": "T-002",
+    "title": "Storefront public routes (home, shop, category, product, search, reviews, contact, about, size-guide)",
+    "phase": "1",
+    "status": "in_progress",
+    "dependsOn": ["T-001"],
+    "files": ["src/app/**", "src/components/store/**", "src/server/catalog/public.ts"],
+    "verification": "pnpm build; e2e browse/filter/order flows; axe",
+    "remaining": "All routes; JSON-LD; sitemap/robots; /api/search-index; /api/health; error boundaries"
+  },
+  {
+    "id": "T-003",
+    "title": "Admin app (login, dashboard, products CRUD, orders, reviews, settings)",
+    "phase": "1",
+    "status": "in_progress",
+    "dependsOn": ["T-001"],
+    "files": ["src/app/admin/**", "src/server/admin/**", "src/components/admin/**", "proxy.ts"],
+    "verification": "integration tests for services; e2e admin flows; requireAdmin in every page/action",
+    "remaining": "Everything beyond auth primitives; orders/reviews are Phase 1.5"
+  },
+  {
+    "id": "T-004",
+    "title": "Test suites (unit, integration, e2e, axe) and Playwright config",
+    "phase": "1",
+    "status": "in_progress",
+    "dependsOn": ["T-001"],
+    "files": ["tests/**", "playwright.config.ts", "vitest config"],
+    "verification": "pnpm test:unit; pnpm test:integration; pnpm test:e2e",
+    "remaining": "Coverage of storefront and admin flows"
+  },
+  {
+    "id": "T-005",
+    "title": "Docker image, Render blueprint, CI, Dependabot",
+    "phase": "1",
+    "status": "done",
+    "dependsOn": ["T-001"],
+    "files": [
+      "Dockerfile",
+      ".dockerignore",
+      "scripts/migrate.mjs",
+      "render.yaml",
+      ".github/workflows/ci.yml",
+      ".github/dependabot.yml"
+    ],
+    "verification": "docker build with build args and a reachable DB; CI green on first push",
+    "remaining": "Docker build and CI run are unverified; confirm migrate.mjs module resolution inside the image"
+  },
+  {
+    "id": "T-006",
+    "title": "Documentation set (architecture, ADRs, deployment, traceability, assumptions)",
+    "phase": "1",
+    "status": "done",
+    "dependsOn": [],
+    "files": ["docs/**", "README.md"],
+    "verification": "prettier --check docs README.md",
+    "remaining": "Keep traceability statuses current as features land"
+  },
+  {
+    "id": "T-007",
+    "title": "Owner inputs: WhatsApp number, brand story, payment text, photos, size chart, Instagram credentials",
+    "phase": "1",
+    "status": "blocked",
+    "dependsOn": [],
+    "files": ["docs/agent/BLOCKERS.md"],
+    "verification": "Owner supplies content; entered via /admin/settings",
+    "remaining": "All items in BLOCKERS.md"
+  },
+  {
+    "id": "T-008",
+    "title": "Production deployment (Render + Neon/Supabase + R2), domain, backups",
+    "phase": "1",
+    "status": "todo",
+    "dependsOn": ["T-002", "T-003", "T-005", "T-007"],
+    "files": ["docs/deployment/current.md"],
+    "verification": "First-deploy checklist complete; /api/health green; test restore",
+    "remaining": "Accounts, secrets, DNS, disable Supabase Data API if used"
+  },
+  {
+    "id": "T-009",
+    "title": "Phase 1.5: collab/sale pages, size guide, orders and reviews admin, featured ordering, Instagram feed, preorder, announcements",
+    "phase": "1.5",
+    "status": "todo",
+    "dependsOn": ["T-002", "T-003"],
+    "files": ["src/app/**", "src/server/admin/**"],
+    "verification": "e2e per story (CS-13, CS-14, CS-17, CS-22, CS-23, CS-24, AS-12, AS-13, AS-14, AS-18)",
+    "remaining": "All"
+  },
+  {
+    "id": "T-010",
+    "title": "Housekeeping: prune sessions and rate limits periodically; add PLAUSIBLE_SCRIPT_URL to .env.example",
+    "phase": "1",
+    "status": "todo",
+    "dependsOn": ["T-003"],
+    "files": ["src/server/auth/session.ts", "src/server/auth/rate-limit.ts", ".env.example"],
+    "verification": "integration test for prune; env example matches env.ts",
+    "remaining": "All"
+  },
+  {
+    "id": "T-011",
+    "title": "Upgrade Next.js to 16.3.8 (security release expected 2026-09-30)",
+    "phase": "1",
+    "status": "todo",
+    "dependsOn": [],
+    "files": ["package.json", "pnpm-lock.yaml"],
+    "verification": "pnpm verify; osv-scanner clean",
+    "remaining": "Check npm for 16.3.8, bump next and eslint-config-next together"
+  },
+  {
+    "id": "T-012",
+    "title": "Phase 2: Urdu (CS-15), wishlist (CS-21), analytics dashboard (AS-19), checkout and payments",
+    "phase": "2",
+    "status": "todo",
+    "dependsOn": ["T-008"],
+    "files": [
+      "docs/architecture/decisions/0011-whatsapp-ordering-and-future-checkout.md",
+      "docs/architecture/decisions/0012-localization-strategy.md",
+      "docs/architecture/decisions/0013-analytics-seam.md"
+    ],
+    "verification": "Per ADRs",
+    "remaining": "All; requires owner decisions on payment providers"
+  },
+  {
+    "id": "T-013",
+    "title": "Performance verification for CS-20 (Lighthouse mobile, 4G throttling)",
+    "phase": "1",
+    "status": "todo",
+    "dependsOn": ["T-002", "T-008"],
+    "files": [],
+    "verification": "LCP under 3 s on throttled 4G on staging",
+    "remaining": "All"
+  }
+]

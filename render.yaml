@@ -1,0 +1,46 @@
+# Render Blueprint. See docs/deployment/render.md.
+# Database and object storage are external (Neon/Supabase + R2/Supabase Storage).
+services:
+  - type: web
+    name: usba-store
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    preDeployCommand: node scripts/migrate.mjs
+    # Cache Components prerenders at build time, so these are needed both at
+    # build (passed to Docker as build args) and at runtime.
+    envVars:
+      - key: SITE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_POOL_MAX
+        value: "5"
+      - key: DATABASE_PREPARE
+        value: "true" # set "false" for transaction-mode poolers (Supabase :6543)
+      - key: DATABASE_SSL
+        value: require
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: MEDIA_BASE_URL
+        sync: false
+      - key: CLIENT_IP_HEADER
+        value: x-forwarded-for # verify what Render's proxy sets before relying on per-IP limits
+      - key: LOG_LEVEL
+        value: info
+      - key: ANALYTICS_PROVIDER
+        value: none
+      - key: PORT
+        value: "3000"

@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SITE_URL: http://localhost:3100
+  DATABASE_URL: postgres://usba:usba_dev_password@localhost:54329/usba
+  TEST_DATABASE_URL: postgres://usba:usba_dev_password@localhost:54329/usba_test
+  DATABASE_POOL_MAX: "5"
+  DATABASE_PREPARE: "true"
+  DATABASE_SSL: disable
+  S3_ENDPOINT: http://localhost:9100
+  S3_REGION: us-east-1
+  S3_BUCKET: usba-media
+  S3_ACCESS_KEY_ID: usba_dev_access
+  S3_SECRET_ACCESS_KEY: usba_dev_secret_key
+  S3_FORCE_PATH_STYLE: "true"
+  MEDIA_BASE_URL: http://localhost:9100/usba-media
+  LOG_LEVEL: warn
+  ANALYTICS_PROVIDER: none
+  ADMIN_EMAIL: owner@example.com
+  ADMIN_PASSWORD: ci-only-password-123
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: usba
+          POSTGRES_PASSWORD: usba_dev_password
+          POSTGRES_DB: usba
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U usba -d usba"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Create test database
+        run: PGPASSWORD=usba_dev_password psql -h localhost -p 54329 -U usba -d usba -c "CREATE DATABASE usba_test OWNER usba"
+
+      - name: Start RustFS (S3-compatible storage)
+        run: |
+          docker run -d --name rustfs -p 9100:9000 \
+            -e RUSTFS_ACCESS_KEY=usba_dev_access \
+            -e RUSTFS_SECRET_KEY=usba_dev_secret_key \
+            rustfs/rustfs:latest /data
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null http://localhost:9100/; then exit 0; fi
+            sleep 2
+          done
+          docker logs rustfs
+          exit 1
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+      - run: pnpm test:integration
+
+      - name: Prepare CI database and bucket
+        run: |
+          pnpm storage:setup
+          pnpm db:migrate
+          pnpm db:seed
+
+      - name: Build (prerenders pages against the CI database)
+        run: pnpm build
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks (secret scan)
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest \
+            detect --source /repo -v --redact
+
+      - name: osv-scanner (dependency vulnerabilities, needs v2.6+ for pnpm lockfiles)
+        run: |
+          docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:latest \
+            scan --lockfile /src/pnpm-lock.yaml

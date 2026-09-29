@@ -30,8 +30,9 @@ const envSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
   S3_REGION: z.string().min(1).default("us-east-1"),
   S3_BUCKET: z.string().min(3),
-  S3_ACCESS_KEY_ID: z.string().min(1),
-  S3_SECRET_ACCESS_KEY: z.string().min(1),
+  /** Both empty = AWS default credential chain (e.g. ECS task role). */
+  S3_ACCESS_KEY_ID: z.string().default(""),
+  S3_SECRET_ACCESS_KEY: z.string().default(""),
   S3_FORCE_PATH_STYLE: booleanish.default(false),
   /** Public base URL objects are served from (CDN / public bucket). No trailing slash. */
   MEDIA_BASE_URL: z.url().transform((u) => u.replace(/\/+$/, "")),

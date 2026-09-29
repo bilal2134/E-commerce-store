@@ -26,10 +26,24 @@ export const SORT_LABELS: Record<SortOption, string> = {
 /** Preset price bands matching Requirements CS-04 (Rs. 1,499 – Rs. 2,500+). */
 export const PRICE_BANDS = [
   { id: "under-1500", label: "Under Rs. 1,500", min: null, max: 1499 },
-  { id: "1500-2000", label: "Rs. 1,500 – 2,000", min: 1500, max: 2000 },
-  { id: "2000-2500", label: "Rs. 2,000 – 2,500", min: 2000, max: 2500 },
+  { id: "1500-1999", label: "Rs. 1,500 – 1,999", min: 1500, max: 1999 },
+  { id: "2000-2499", label: "Rs. 2,000 – 2,499", min: 2000, max: 2499 },
   { id: "2500-plus", label: "Rs. 2,500+", min: 2500, max: null },
 ] as const;
+
+/** The fields filtering and sorting need (a subset of ProductCard). */
+export type Listable = Pick<
+  ProductCard,
+  | "id"
+  | "code"
+  | "categorySlug"
+  | "pricePkr"
+  | "salePricePkr"
+  | "stockStatus"
+  | "colors"
+  | "createdAt"
+  | "featuredRank"
+>;
 
 export interface ListingFilters {
   colors: Color[];
@@ -118,7 +132,7 @@ export function activeFilterCount(filters: ListingFilters): number {
   );
 }
 
-export function matchesFilters(product: ProductCard, filters: ListingFilters): boolean {
+export function matchesFilters(product: Listable, filters: ListingFilters): boolean {
   if (filters.sub && product.categorySlug !== filters.sub) return false;
   if (filters.inStockOnly && product.stockStatus === "out_of_stock") return false;
   if (filters.colors.length && !filters.colors.some((c) => product.colors.includes(c))) {
@@ -130,11 +144,11 @@ export function matchesFilters(product: ProductCard, filters: ListingFilters): b
   return true;
 }
 
-function compareNewest(a: ProductCard, b: ProductCard): number {
+function compareNewest(a: Listable, b: Listable): number {
   return b.createdAt.localeCompare(a.createdAt) || a.code.localeCompare(b.code);
 }
 
-function compareFeatured(a: ProductCard, b: ProductCard): number {
+function compareFeatured(a: Listable, b: Listable): number {
   // Out-of-stock items sink to the bottom of the default ordering.
   const oos = Number(a.stockStatus === "out_of_stock") - Number(b.stockStatus === "out_of_stock");
   if (oos !== 0) return oos;
@@ -144,8 +158,8 @@ function compareFeatured(a: ProductCard, b: ProductCard): number {
   return compareNewest(a, b);
 }
 
-export function sortProducts(products: readonly ProductCard[], sort: SortOption): ProductCard[] {
-  const current = (p: ProductCard) => priceInfo(p.pricePkr, p.salePricePkr).current;
+export function sortProducts<T extends Listable>(products: readonly T[], sort: SortOption): T[] {
+  const current = (p: Listable) => priceInfo(p.pricePkr, p.salePricePkr).current;
   const copy = [...products];
   switch (sort) {
     case "newest":
@@ -159,7 +173,7 @@ export function sortProducts(products: readonly ProductCard[], sort: SortOption)
   }
 }
 
-export function applyFilters(products: readonly ProductCard[], filters: ListingFilters): ProductCard[] {
+export function applyFilters<T extends Listable>(products: readonly T[], filters: ListingFilters): T[] {
   return sortProducts(
     products.filter((p) => matchesFilters(p, filters)),
     filters.sort,
@@ -167,7 +181,7 @@ export function applyFilters(products: readonly ProductCard[], filters: ListingF
 }
 
 /** Colours present in a listing, with counts, for the colour facet. */
-export function colorFacets(products: readonly ProductCard[]): { color: Color; count: number }[] {
+export function colorFacets(products: readonly Listable[]): { color: Color; count: number }[] {
   const counts = new Map<Color, number>();
   for (const p of products) for (const c of p.colors) counts.set(c, (counts.get(c) ?? 0) + 1);
   return COLORS.filter((c) => counts.has(c)).map((c) => ({ color: c, count: counts.get(c) ?? 0 }));
