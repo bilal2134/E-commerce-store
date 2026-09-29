@@ -1,26 +1,32 @@
 # Progress
 
-Updated 2026-09-30. Machine-readable ledger: `docs/agent/tasks.json`.
+_Last updated: 2026-09-30 (end of autonomous run 1)._
 
-## Done
+## State
 
-- Scaffold (commit 7a9e4f0): Next.js 16.3.7 modular monolith, domain modules, Drizzle schema + SQL migrations (0000_init, 0001_integrity), custom admin auth primitives, storage port + S3/memory adapters, image pipeline, seed/migrate/create-admin/setup-storage scripts, docker compose (Postgres 17 + RustFS), security headers.
-- Research: docs/research/{hosting,stack,security,ux-seo}.md.
-- Docs and infra (this pass): architecture docs, ADRs 0001-0013, deployment docs, traceability, assumptions, Dockerfile, .dockerignore, `scripts/migrate.mjs`, render.yaml, CI workflow, Dependabot, README.
+Phase 1 (MVP) and Phase 1.5 stories are implemented and verified; Phase 2 (Urdu, wishlist, analytics dashboard, checkout) is deferred by design. See `docs/requirements-traceability.md` (statuses verified by an independent audit).
 
-## In progress
+| Area                                                                                                      | State                                      | Evidence                                               |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
+| Storefront (home, /shop, /shop/[slug], /product/[slug], search, reviews, contact, about, size guide, 404) | Done                                       | e2e `tests/e2e/store/*` (desktop + Pixel 7)            |
+| Admin (auth, dashboard, products, featured order, orders + history, reviews, Instagram, settings)         | Done                                       | e2e `tests/e2e/admin/*`                                |
+| Domain/unit                                                                                               | Done                                       | `pnpm test:unit` (154)                                 |
+| DB/integration                                                                                            | Done                                       | `pnpm test:integration` (85) against `usba_test`       |
+| SEO                                                                                                       | Done                                       | `docs/seo.md`, e2e seo.spec                            |
+| Performance                                                                                               | Measured                                   | `docs/performance.md` (Lighthouse mobile 92–93, CLS 0) |
+| Accessibility                                                                                             | axe clean on 12 pages; manual audit        | e2e quality.spec                                       |
+| Security                                                                                                  | Audited, findings fixed                    | `docs/architecture/security.md`                        |
+| Docker image                                                                                              | Built and run locally; no secrets in image | `Dockerfile`                                           |
 
-| Owner                      | Work                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Admin app (worktree agent) | `src/app/admin/*`, `src/server/admin/*`, `src/components/admin/*` (login, products CRUD, orders, reviews, settings) |
-| Tests (worktree agent)     | `tests/**`, `playwright.config.ts`, Vitest projects (unit, integration), e2e + axe                                  |
-| Storefront (orchestrator)  | `src/app/*` public routes, `src/components/store/*`, sitemap/robots, `/api/health`, `/api/search-index`             |
+## How to resume
+
+1. `git log --oneline | head`, `git status`.
+2. `pnpm infra:up` then `pnpm verify` (format, lint, typecheck, unit, integration, build) and `pnpm test:e2e`.
+3. Read `docs/agent/DECISIONS.md`, `docs/agent/BLOCKERS.md`, `docs/agent/tasks.json`.
 
 ## Next actions
 
-1. Land storefront routes, then verify `docker build` end to end (unverified so far) and confirm `drizzle-orm`/`postgres` resolution for `scripts/migrate.mjs` inside the image.
-2. Wire CI: confirm script names/ports used by Playwright config match `.github/workflows/ci.yml` (`SITE_URL=http://localhost:3100`, `TEST_DATABASE_URL`).
-3. Add `PLAUSIBLE_SCRIPT_URL` to `.env.example`; add periodic cleanup for sessions/rate limits.
-4. Upgrade Next.js to 16.3.8 when the security release is published (expected 2026-09-30).
-5. Resolve owner blockers (docs/agent/BLOCKERS.md), then measure CS-20 (Lighthouse mobile) on staging.
-6. Update statuses in `docs/requirements-traceability.md` as features land.
+- Upgrade `next` to 16.3.8 as soon as it is on npm; re-run the full suite.
+- Owner inputs in BLOCKERS (WhatsApp number, payment FAQ, brand story, real catalogue/photos, hosting accounts).
+- First deployment (docs/deployment/current.md) once accounts exist; then Lighthouse + field Web Vitals on the real domain.
+- Phase 2: Urdu locale (ADR-0012), wishlist (CS-21), analytics dashboard (AS-19), checkout (ADR-0011).
