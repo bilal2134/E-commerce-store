@@ -121,12 +121,7 @@ export function OrderPanel({
   return (
     <div>
       {requiresSize ? (
-        <fieldset
-          ref={sizeGroupRef}
-          className="mt-6"
-          aria-describedby={error ? `${ids}-error` : undefined}
-          aria-invalid={error ? true : undefined}
-        >
+        <fieldset ref={sizeGroupRef} className="mt-6" aria-describedby={error ? `${ids}-error` : undefined}>
           <legend className="flex w-full items-baseline justify-between text-sm font-semibold text-ink">
             <span>Size (EU){size ? <span className="font-normal text-ink-soft">: {size}</span> : null}</span>
           </legend>
@@ -148,7 +143,7 @@ export function OrderPanel({
                 <span
                   className={cn(
                     "flex h-12 items-center justify-center rounded-sm border text-sm font-medium transition-colors select-none",
-                    "border-line-strong bg-surface text-ink hover:border-ink",
+                    "border-control bg-surface text-ink hover:border-ink",
                     "peer-checked:border-ink peer-checked:bg-ink peer-checked:text-petal",
                     "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cherry",
                     "peer-disabled:cursor-not-allowed peer-disabled:border-line peer-disabled:bg-blush peer-disabled:text-muted peer-disabled:line-through",
@@ -245,6 +240,7 @@ export function OrderPanel({
       {/* Sticky order bar for small screens (thumb reach), hidden while the main CTA is visible. */}
       {!soldOut && whatsappHref ? (
         <div
+          data-sticky-order-bar=""
           className={cn(
             "fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 shadow-bar backdrop-blur-sm transition-transform duration-[var(--duration-base)] lg:hidden",
             ctaVisible ? "translate-y-full" : "translate-y-0",

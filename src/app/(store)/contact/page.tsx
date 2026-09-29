@@ -28,7 +28,7 @@ export default async function ContactPage() {
 
   return (
     <div className="container-page pt-6 md:pt-10">
-      <div className="grid gap-10 lg:grid-cols-12">
+      <div className="grid gap-10 lg:grid-cols-12 [&>*]:min-w-0">
         <div className="lg:col-span-5">
           <h1 className="type-display text-[2.5rem] leading-none md:text-6xl">Contact & how to order</h1>
           <p className="mt-4 max-w-md text-base text-ink-soft">

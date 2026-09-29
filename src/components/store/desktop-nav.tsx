@@ -10,7 +10,7 @@ export function DesktopNav({ links }: { links: NavLink[] }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Primary" className="hidden lg:block">
-      <ul className="flex items-center gap-x-1 xl:gap-x-2">
+      <ul className="flex items-center xl:gap-x-2">
         {links.map((l) => {
           const current = pathname === l.href;
           return (
@@ -19,7 +19,7 @@ export function DesktopNav({ links }: { links: NavLink[] }) {
                 href={l.href}
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex h-11 items-center px-2 text-sm transition-colors",
+                  "relative inline-flex h-11 items-center px-1.5 text-sm whitespace-nowrap transition-colors xl:px-2",
                   "after:absolute after:inset-x-2 after:bottom-2 after:h-px after:origin-left after:scale-x-0 after:bg-current after:transition-transform",
                   "hover:after:scale-x-100 aria-[current=page]:after:scale-x-100",
                   l.emphasis ? "font-semibold text-cherry" : "text-ink",

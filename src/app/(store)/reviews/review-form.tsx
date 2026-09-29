@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useEffect, useRef, type FormEvent } from "react";
 import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -14,6 +14,25 @@ export function ReviewForm() {
     if (next.status === "success") track("review_submit");
     return next;
   }, initial);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // After a failed submit, move focus to the first invalid field (or the summary).
+  useEffect(() => {
+    if (state.status !== "error") return;
+    const form = formRef.current;
+    (
+      form?.querySelector<HTMLElement>("[aria-invalid='true']") ??
+      form?.querySelector<HTMLElement>("[role='alert']")
+    )?.focus();
+  }, [state]);
+
+  // Submitting via onSubmit (not the form `action` prop) keeps what the customer
+  // typed when validation fails; React resets forms after `action` submissions.
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    startTransition(() => action(data));
+  }
 
   if (state.status === "success") {
     return (
@@ -27,14 +46,18 @@ export function ReviewForm() {
   const errors = state.status === "error" ? (state.fieldErrors ?? {}) : {};
 
   return (
-    <form action={action} noValidate className="grid gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="grid gap-5">
       {state.status === "error" ? (
-        <p role="alert" className="rounded-sm bg-danger-tint px-4 py-3 text-sm font-medium text-danger">
+        <p
+          role="alert"
+          tabIndex={-1}
+          className="rounded-sm bg-danger-tint px-4 py-3 text-sm font-medium text-danger"
+        >
           {state.message}
         </p>
       ) : null}
       <Field id="review-name" label="Your name" required error={errors.customerName}>
-        {(aria) => <Input {...aria} name="customerName" autoComplete="given-name" maxLength={80} />}
+        {(aria) => <Input {...aria} name="customerName" autoComplete="name" maxLength={80} />}
       </Field>
       <Field
         id="review-body"
@@ -51,7 +74,7 @@ export function ReviewForm() {
           {[5, 4, 3, 2, 1].map((n) => (
             <label key={n} className="relative">
               <input type="radio" name="rating" value={n} className="peer sr-only" />
-              <span className="inline-flex h-11 min-w-11 items-center justify-center rounded-sm border border-line-strong bg-surface px-3 text-sm peer-checked:border-cherry peer-checked:bg-cherry-tint peer-checked:text-cherry-deep peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cherry">
+              <span className="inline-flex h-11 min-w-11 items-center justify-center rounded-sm border border-control bg-surface px-3 text-sm peer-checked:border-cherry peer-checked:bg-cherry-tint peer-checked:text-cherry-deep peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cherry">
                 {n} {n === 1 ? "star" : "stars"}
               </span>
             </label>

@@ -38,6 +38,13 @@ export function MobileNav({
           e.preventDefault();
           setOpen(true);
         }}
+        onKeyDown={(e) => {
+          if (e.key === " ") {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+        role="button"
         aria-haspopup="dialog"
         className="inline-flex size-11 items-center justify-center rounded-sm text-ink hover:bg-blush lg:hidden"
       >
@@ -106,7 +113,7 @@ export function MobileNav({
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <InstagramIcon size={18} /> Instagram
+                  <InstagramIcon size={18} /> Instagram<span className="sr-only"> (opens in a new tab)</span>
                 </a>
               </li>
             ) : null}

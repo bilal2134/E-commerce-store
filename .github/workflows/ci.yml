@@ -99,6 +99,13 @@ jobs:
       - name: End-to-end tests
         run: pnpm test:e2e
 
+      - name: Build Docker image and assert it ships no secrets
+        run: |
+          env | grep -E '^(SITE_URL|DATABASE_[A-Z_]+|S3_[A-Z_]+|MEDIA_BASE_URL|ANALYTICS_PROVIDER)=' > "$RUNNER_TEMP/buildenv"
+          docker build --network=host --secret id=buildenv,src="$RUNNER_TEMP/buildenv" -t usba:ci .
+          docker run --rm usba:ci sh -c '! ls -a /app | grep -q "^\.env"'
+          ! docker run --rm usba:ci sh -c "grep -rl '$S3_SECRET_ACCESS_KEY' /app/.next /app/server.js"
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

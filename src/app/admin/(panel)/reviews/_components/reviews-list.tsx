@@ -73,7 +73,7 @@ export function ReviewsList({ rows, status }: { rows: ReviewView[]; status: Revi
                 ) : null}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h3 className="font-semibold">{r.customerName}</h3>
+                    <h2 className="font-semibold">{r.customerName}</h2>
                     <ReviewStatusPill status={r.status} />
                     {r.source === "admin" ? <span className="text-xs text-muted">Added by you</span> : null}
                     {r.rating ? (

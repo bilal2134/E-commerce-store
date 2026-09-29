@@ -9,7 +9,7 @@ export const instant = false;
 
 export default function AdminLoginPage() {
   return (
-    <div className="flex min-h-dvh items-center justify-center px-4 py-10">
+    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <p className="type-title text-4xl">USBA</p>
@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

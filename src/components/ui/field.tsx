@@ -7,9 +7,9 @@ import { cn } from "@/lib/cn";
  */
 
 const control =
-  "block w-full rounded-sm border border-line-strong bg-surface px-3 text-base text-ink " +
+  "block w-full rounded-sm border border-control bg-surface px-3 text-base text-ink " +
   "placeholder:text-muted transition-colors hover:border-ink-soft " +
-  "focus:border-cherry focus:outline-none focus-visible:outline-2 focus-visible:outline-cherry focus-visible:outline-offset-0 " +
+  "focus:border-cherry " +
   "aria-invalid:border-danger disabled:bg-blush disabled:text-muted";
 
 export function Label({ className, children, ...props }: ComponentProps<"label">) {

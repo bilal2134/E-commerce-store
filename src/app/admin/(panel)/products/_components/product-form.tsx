@@ -463,7 +463,7 @@ export function ProductForm(props: ProductFormProps) {
 
       <div className="sticky bottom-0 z-20 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-sm lg:border">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-h-9 sm:flex-1">
+          <div className="sm:flex-1">
             <StatusMessage result={state} successFallback="Product saved" />
             {attempted && !parsed.success && !state ? (
               <p role="alert" className="text-sm font-medium text-danger">

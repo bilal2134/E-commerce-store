@@ -89,6 +89,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
+      <a
+        href="#admin-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-sm focus:bg-ink focus:px-4 focus:py-3 focus:text-sm focus:text-petal"
+      >
+        Skip to content
+      </a>
       <aside className="hidden border-e border-line bg-surface lg:block">
         <div className="sticky top-0 flex h-dvh flex-col gap-6 p-4">
           <Link href="/admin/dashboard" className="px-3 pt-2">
@@ -127,7 +133,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main id="admin-main" className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main
+          id="admin-main"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-6 lg:px-8 lg:py-8"
+        >
           {children}
         </main>
       </div>

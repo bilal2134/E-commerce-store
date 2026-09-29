@@ -20,7 +20,7 @@ export function SectionHeader({
   tone?: "ink" | "cherry" | "petal";
 }) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-4 md:mb-7">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:mb-7">
       <div>
         <h2
           id={id}
@@ -42,7 +42,7 @@ export function SectionHeader({
         <Link
           href={action.href}
           className={cn(
-            "inline-flex h-11 shrink-0 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline",
+            "inline-flex h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline",
             tone === "petal" ? "text-petal" : "text-ink",
           )}
         >

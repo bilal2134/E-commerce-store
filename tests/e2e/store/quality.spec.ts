@@ -48,7 +48,7 @@ test("filter sheet and search dialog are accessible when open", async ({ page })
   // Focus returns to the trigger.
   await expect(page.getByRole("button", { name: /^Filter/ })).toBeFocused();
 
-  await page.getByRole("link", { name: "Search" }).first().click();
+  await page.getByRole("button", { name: "Search" }).first().click();
   await page.getByRole("combobox", { name: "Search products" }).fill("heels");
   results = await new AxeBuilder({ page }).include("dialog[open]").analyze();
   expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);

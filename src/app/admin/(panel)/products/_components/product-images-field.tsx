@@ -119,6 +119,7 @@ export function ProductImagesField({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple
+            aria-label="Add photos"
             className="sr-only"
             data-testid="product-image-input"
             disabled={slotsLeft <= 0}

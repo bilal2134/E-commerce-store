@@ -59,19 +59,21 @@ export function Sheet({
         if (e.target === ref.current) onClose();
       }}
       className={cn(
-        "sheet bg-surface p-0 text-ink shadow-overlay backdrop:bg-ink/40",
+        // The dialog is the flex container and never scrolls itself; only the
+        // body region scrolls, so the header and footer stay in view.
+        "sheet overflow-hidden bg-surface p-0 text-ink shadow-overlay backdrop:bg-ink/40 open:flex open:flex-col",
         position,
         `sheet-${side}`,
         className,
       )}
     >
-      <div className="flex h-full max-h-[inherit] flex-col">
-        <div
-          className={cn(
-            "flex items-center justify-between gap-4 border-b border-line px-5 py-3",
-            hideTitle && "sr-only",
-          )}
-        >
+      {hideTitle ? (
+        // Title for assistive tech only; the content supplies its own close control.
+        <h2 id={titleId} className="sr-only">
+          {title}
+        </h2>
+      ) : (
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-line px-5 py-3">
           <h2 id={titleId} className="text-base font-semibold">
             {title}
           </h2>
@@ -84,9 +86,9 @@ export function Sheet({
             <CloseIcon />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
-        {footer ? <div className="border-t border-line bg-surface px-5 py-3">{footer}</div> : null}
-      </div>
+      )}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      {footer ? <div className="shrink-0 border-t border-line bg-surface px-5 py-3">{footer}</div> : null}
     </dialog>
   );
 }

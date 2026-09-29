@@ -47,7 +47,7 @@ export async function SiteHeader() {
         </div>
       ) : null}
       <header className="sticky top-0 z-40 border-b border-line bg-petal/95 backdrop-blur-sm supports-[backdrop-filter]:bg-petal/85">
-        <div className="container-page flex h-[var(--header-height)] items-center gap-2 lg:gap-6">
+        <div className="container-page flex h-[var(--header-height)] items-center gap-2 lg:gap-4 xl:gap-6">
           <div className="flex flex-1 items-center lg:flex-none">
             <MobileNav
               groups={groups}

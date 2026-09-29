@@ -17,7 +17,6 @@ import {
 } from "@/domain/listing";
 import { formatPkr } from "@/domain/money";
 import { track } from "@/lib/analytics";
-import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, CloseIcon, FilterIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
@@ -45,6 +44,7 @@ export function FilterableListing({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [side, setSide] = useState<"bottom" | "right">("bottom");
   const resultsRef = useRef<HTMLParagraphElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const activeCount = activeFilterCount(filters);
 
   function apply(next: ListingFilters) {
@@ -80,12 +80,13 @@ export function FilterableListing({
   return (
     <div>
       <div className="sticky top-[var(--header-height)] z-30 -mx-4 border-b border-line bg-petal/95 px-4 py-2 backdrop-blur-sm md:-mx-6 md:px-6 lg:mx-0 lg:px-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <button
+            ref={filterButtonRef}
             type="button"
             onClick={openSheet}
             aria-haspopup="dialog"
-            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-sm border border-line-strong bg-surface px-4 text-sm font-medium text-ink hover:border-ink"
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-sm border border-control bg-surface px-4 text-sm font-medium text-ink hover:border-ink"
           >
             <FilterIcon size={18} />
             Filter
@@ -96,20 +97,22 @@ export function FilterableListing({
               </span>
             ) : null}
           </button>
+          <SortSelect value={filters.sort} onChange={(sort) => apply({ ...filters, sort })} />
+        </div>
 
-          <ul
-            aria-label="Active filters"
-            className={cn(
-              "scroller flex min-w-0 flex-1 gap-2 overflow-x-auto",
-              chips.length === 0 && "hidden",
-            )}
-          >
+        {/* Active filters get their own wrapping row so they stay usable at 320px. */}
+        {chips.length ? (
+          <ul aria-label="Active filters" className="mt-2 flex flex-wrap items-center gap-2">
             {chips.map((chip) => (
-              <li key={chip.key} className="shrink-0">
+              <li key={chip.key}>
                 <button
                   type="button"
-                  onClick={() => apply(chip.next)}
-                  className="inline-flex h-9 items-center gap-1 rounded-sm bg-ballet px-3 text-sm text-ink hover:bg-ballet/70"
+                  onClick={() => {
+                    apply(chip.next);
+                    // The chip unmounts; keep keyboard focus somewhere sensible.
+                    filterButtonRef.current?.focus();
+                  }}
+                  className="inline-flex h-10 items-center gap-1 rounded-sm bg-ballet px-3 text-sm text-ink hover:bg-ballet/70"
                 >
                   {chip.label}
                   <CloseIcon size={14} aria-hidden="true" />
@@ -117,20 +120,20 @@ export function FilterableListing({
                 </button>
               </li>
             ))}
-            <li className="shrink-0">
+            <li>
               <button
                 type="button"
-                onClick={() => apply({ ...DEFAULT_FILTERS, sort: filters.sort })}
-                className="inline-flex h-9 items-center px-2 text-sm font-medium text-cherry underline underline-offset-4"
+                onClick={() => {
+                  apply({ ...DEFAULT_FILTERS, sort: filters.sort });
+                  filterButtonRef.current?.focus();
+                }}
+                className="inline-flex h-10 items-center px-2 text-sm font-medium text-cherry underline underline-offset-4"
               >
                 Clear all
               </button>
             </li>
           </ul>
-          <div className={cn("flex-1", chips.length > 0 && "hidden")} />
-
-          <SortSelect value={filters.sort} onChange={(sort) => apply({ ...filters, sort })} />
-        </div>
+        ) : null}
       </div>
 
       <p ref={resultsRef} className="mt-4 mb-4 text-sm text-ink-soft" role="status" aria-live="polite">
@@ -195,7 +198,7 @@ function SortSelect({ value, onChange }: { value: SortOption; onChange: (v: Sort
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value as SortOption)}
-        className="h-11 max-w-40 appearance-none rounded-sm border border-line-strong bg-surface ps-3 pe-8 text-sm text-ink hover:border-ink sm:max-w-none"
+        className="h-11 max-w-40 appearance-none rounded-sm border border-control bg-surface ps-3 pe-8 text-sm text-ink hover:border-ink sm:max-w-none"
       >
         {SORT_OPTIONS.map((o) => (
           <option key={o} value={o}>
@@ -260,8 +263,8 @@ function FilterForm({
     <div className="flex min-h-full flex-col">
       <div className="flex-1 divide-y divide-line px-5">
         <fieldset className="py-5 md:hidden">
-          <legend className="mb-3 text-sm font-semibold">Sort by</legend>
-          <div className="grid gap-1">
+          <legend className="float-left mb-3 w-full text-sm font-semibold">Sort by</legend>
+          <div className="clear-left grid gap-1">
             {SORT_OPTIONS.map((o) => (
               <label key={o} className="flex min-h-11 items-center gap-3 text-sm">
                 <input
@@ -279,8 +282,8 @@ function FilterForm({
 
         {colors.length ? (
           <fieldset className="py-5">
-            <legend className="mb-3 text-sm font-semibold">Colour</legend>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <legend className="float-left mb-3 w-full text-sm font-semibold">Colour</legend>
+            <div className="clear-left grid grid-cols-2 gap-x-3 gap-y-1">
               {colors.map(({ color, count: n }) => {
                 const checked = draft.colors.includes(color);
                 return (
@@ -323,8 +326,8 @@ function FilterForm({
         ) : null}
 
         <fieldset className="py-5">
-          <legend className="mb-3 text-sm font-semibold">Price</legend>
-          <div className="flex flex-wrap gap-2">
+          <legend className="float-left mb-3 w-full text-sm font-semibold">Price</legend>
+          <div className="clear-left flex flex-wrap gap-2">
             {PRICE_BANDS.map((b) => {
               const selected = draft.minPrice === b.min && draft.maxPrice === b.max;
               return (
@@ -333,7 +336,7 @@ function FilterForm({
                   type="button"
                   aria-pressed={selected}
                   onClick={() => (selected ? setPrice(null, null) : setPrice(b.min, b.max))}
-                  className="inline-flex h-10 items-center rounded-sm border border-line-strong px-3 text-sm aria-pressed:border-cherry aria-pressed:bg-cherry-tint aria-pressed:text-cherry-deep"
+                  className="inline-flex h-10 items-center rounded-sm border border-control px-3 text-sm aria-pressed:border-cherry aria-pressed:bg-cherry-tint aria-pressed:text-cherry-deep"
                 >
                   {b.label}
                 </button>
@@ -364,7 +367,7 @@ function FilterForm({
                       [key === "min" ? "minPrice" : "maxPrice"]: v ? Number(v) : null,
                     }));
                   }}
-                  className="mt-1 h-11 w-full rounded-sm border border-line-strong bg-surface px-3 text-base"
+                  className="mt-1 h-11 w-full rounded-sm border border-control bg-surface px-3 text-base"
                 />
               </div>
             ))}

@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 
 test("live search suggests products and navigates to the product (CS-10)", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "Search" }).first().click();
+  await page.getByRole("button", { name: "Search" }).first().click();
   const input = page.getByRole("combobox", { name: "Search products" });
   await expect(input).toBeFocused();
   await input.fill("brown sneakers");

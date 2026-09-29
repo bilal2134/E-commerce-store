@@ -90,11 +90,18 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
           e.preventDefault();
           setOpen(true);
         }}
+        onKeyDown={(e) => {
+          if (e.key === " ") {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+        role="button"
         aria-haspopup="dialog"
-        className="inline-flex size-11 items-center justify-center gap-2 rounded-sm text-ink hover:bg-blush lg:w-auto lg:px-3"
+        className="inline-flex size-11 items-center justify-center gap-2 rounded-sm text-ink hover:bg-blush xl:w-auto xl:px-3"
       >
         <SearchIcon />
-        <span className="sr-only lg:not-sr-only lg:text-sm">Search</span>
+        <span className="sr-only xl:not-sr-only xl:text-sm">Search</span>
       </a>
       <Sheet open={open} onClose={close} title="Search products" side="top" hideTitle>
         <form
@@ -116,10 +123,10 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
             ref={inputRef}
             id={`${listId}-input`}
             name="q"
-            type="search"
+            type="text"
             role="combobox"
             aria-expanded={results.length > 0}
-            aria-controls={listId}
+            aria-controls={results.length > 0 ? listId : undefined}
             aria-autocomplete="list"
             aria-activedescendant={active >= 0 ? `${listId}-opt-${active}` : undefined}
             aria-describedby={statusId}

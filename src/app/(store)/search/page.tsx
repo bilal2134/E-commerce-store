@@ -71,7 +71,10 @@ async function Results({ searchParams }: { searchParams: PageProps<"/search">["s
         </p>
       ) : null}
       {products.length ? (
-        <ProductGrid products={products} label={`Search results for ${query}`} priorityCount={2} />
+        <>
+          <h2 className="sr-only">Results</h2>
+          <ProductGrid products={products} label={`Search results for ${query}`} priorityCount={2} />
+        </>
       ) : query ? (
         <div className="mt-2">
           <p className="text-sm text-ink-soft">Check the spelling or browse a category:</p>

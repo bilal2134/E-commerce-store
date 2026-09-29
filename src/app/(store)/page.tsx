@@ -55,10 +55,10 @@ export default async function HomePage() {
               <p className="mt-5 max-w-md text-base text-ink-soft md:text-lg">{hero.subtitle}</p>
             ) : null}
             <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink href={(hero.ctaHref || "/shop") as Route} size="lg">
+              <ButtonLink href={(hero.ctaHref || "/shop") as Route} size="lg" className="w-full xs:w-auto">
                 {hero.ctaLabel || "Shop now"}
               </ButtonLink>
-              <ButtonLink href="/shop/sale" variant="secondary" size="lg">
+              <ButtonLink href="/shop/sale" variant="secondary" size="lg" className="w-full xs:w-auto">
                 View sale
               </ButtonLink>
             </div>
