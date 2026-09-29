@@ -196,13 +196,6 @@ function SortSelect({ value, onChange }: { value: SortOption; onChange: (v: Sort
         value={value}
         onChange={(e) => onChange(e.target.value as SortOption)}
         className="h-11 max-w-40 appearance-none rounded-sm border border-line-strong bg-surface ps-3 pe-8 text-sm text-ink hover:border-ink sm:max-w-none"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%235c4652' stroke-width='1.6'/%3E%3C/svg%3E\")",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "right 0.7rem center",
-          backgroundSize: "11px",
-        }}
       >
         {SORT_OPTIONS.map((o) => (
           <option key={o} value={o}>

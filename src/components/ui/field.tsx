@@ -30,18 +30,11 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
 
 export function Select({ className, children, ...props }: ComponentProps<"select">) {
   return (
-    <select
-      className={cn(control, "h-11 appearance-none bg-[length:12px] pr-9", selectArrow, className)}
-      {...props}
-    >
+    <select className={cn(control, "h-11", className)} {...props}>
       {children}
     </select>
   );
 }
-
-const selectArrow =
-  "bg-no-repeat bg-[right_0.85rem_center] " +
-  "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%235c4652' stroke-width='1.6'/%3E%3C/svg%3E\")]";
 
 export function FieldHint({ id, children }: { id: string; children: ReactNode }) {
   return (
