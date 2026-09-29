@@ -24,6 +24,7 @@
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
     "db:seed": "tsx --conditions=react-server --env-file-if-exists=.env scripts/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "e2e:prepare": "tsx --env-file-if-exists=.env scripts/e2e-prepare.ts",
     "storage:setup": "tsx --conditions=react-server --env-file-if-exists=.env scripts/setup-storage.ts",
     "admin:create": "tsx --conditions=react-server --env-file-if-exists=.env scripts/create-admin.ts",
     "setup": "pnpm infra:up && pnpm storage:setup && pnpm db:migrate && pnpm db:seed",
