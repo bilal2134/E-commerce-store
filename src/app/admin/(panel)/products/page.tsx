@@ -164,34 +164,37 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         </div>
       </form>
 
-      {rows.length === 0 ? (
-        filtered ? (
-          <EmptyState
-            title="No products match these filters"
-            action={
-              <ButtonLink href="/admin/products" variant="secondary">
-                Clear filters
-              </ButtonLink>
-            }
-          >
-            Try a different search term or remove a filter.
-          </EmptyState>
-        ) : (
-          <EmptyState
-            title="No products yet"
-            action={
-              <ButtonLink href="/admin/products/new">
-                <PlusIcon size={18} />
-                Add your first product
-              </ButtonLink>
-            }
-          >
-            Products you add appear on the site as soon as you save them and mark them visible.
-          </EmptyState>
-        )
-      ) : (
-        <ProductsTable rows={rows} />
-      )}
+      {/* The table stays mounted when the list becomes empty (e.g. after a
+          delete) so its status message remains visible. */}
+      <ProductsTable
+        rows={rows}
+        empty={
+          filtered ? (
+            <EmptyState
+              title="No products match these filters"
+              action={
+                <ButtonLink href="/admin/products" variant="secondary">
+                  Clear filters
+                </ButtonLink>
+              }
+            >
+              Try a different search term or remove a filter.
+            </EmptyState>
+          ) : (
+            <EmptyState
+              title="No products yet"
+              action={
+                <ButtonLink href="/admin/products/new">
+                  <PlusIcon size={18} />
+                  Add your first product
+                </ButtonLink>
+              }
+            >
+              Products you add appear on the site as soon as you save them and mark them visible.
+            </EmptyState>
+          )
+        }
+      />
 
       <Pagination
         page={list.page}

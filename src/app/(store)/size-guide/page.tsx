@@ -20,7 +20,12 @@ export default async function SizeGuidePage() {
         </p>
 
         {settings.sizeChart.length ? (
-          <div className="mt-8 overflow-x-auto border border-line bg-surface">
+          <div
+            className="mt-8 overflow-x-auto border border-line bg-surface"
+            role="region"
+            aria-label="Size chart"
+            tabIndex={0}
+          >
             <table className="w-full min-w-[28rem] text-left text-sm">
               <caption className="sr-only">Footwear size conversion</caption>
               <thead className="bg-blush text-ink">

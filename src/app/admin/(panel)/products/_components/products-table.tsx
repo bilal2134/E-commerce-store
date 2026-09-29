@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Select } from "@/components/ui/field";
 import { EditIcon, TrashIcon } from "@/components/ui/icons";
 import { ConfirmDialog } from "@/components/ui/dialog";
@@ -32,7 +32,7 @@ export interface ProductRowView {
 
 type Patch = Partial<Pick<ProductRowView, "isVisible" | "stockStatus">>;
 
-export function ProductsTable({ rows }: { rows: ProductRowView[] }) {
+export function ProductsTable({ rows, empty }: { rows: ProductRowView[]; empty?: ReactNode }) {
   // Optimistic overrides live until the server sends fresh rows.
   const [prevRows, setPrevRows] = useState(rows);
   const [patches, setPatches] = useState<Record<string, Patch>>({});
@@ -117,64 +117,131 @@ export function ProductsTable({ rows }: { rows: ProductRowView[] }) {
   return (
     <div>
       <StatusMessage result={message} className="mb-3" />
+      {rows.length === 0 ? empty : null}
 
       {/* Desktop: table */}
-      <div className="hidden overflow-x-auto rounded-sm border border-line bg-surface md:block">
-        <table className="w-full min-w-[56rem] text-sm">
-          <caption className="sr-only">Products</caption>
-          <thead>
-            <tr className="border-b border-line text-start text-muted">
-              <th scope="col" className="sticky top-0 bg-surface px-4 py-3 text-start font-medium">
-                Product
-              </th>
-              <th scope="col" className="sticky top-0 bg-surface px-3 py-3 text-start font-medium">
-                Price
-              </th>
-              <th scope="col" className="sticky top-0 bg-surface px-3 py-3 text-start font-medium">
-                Stock
-              </th>
-              <th scope="col" className="sticky top-0 bg-surface px-3 py-3 text-start font-medium">
-                Visible
-              </th>
-              <th scope="col" className="sticky top-0 bg-surface px-4 py-3 text-end font-medium">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.map((row) => (
-              <tr key={row.id} className="border-b border-line last:border-0">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <Thumb src={row.thumbUrl} alt={row.thumbAlt} className="h-14 w-11 shrink-0 rounded-xs" />
-                    <div className="min-w-0">
-                      <Link
-                        href={`/admin/products/${row.id}`}
-                        className="font-medium hover:text-cherry hover:underline"
+      {rows.length > 0 ? (
+        <>
+          <div className="hidden overflow-x-auto rounded-sm border border-line bg-surface md:block">
+            <table className="w-full min-w-[56rem] text-sm">
+              <caption className="sr-only">Products</caption>
+              <thead>
+                <tr className="border-b border-line text-start text-muted">
+                  <th scope="col" className="sticky top-0 bg-surface px-4 py-3 text-start font-medium">
+                    Product
+                  </th>
+                  <th scope="col" className="sticky top-0 bg-surface px-3 py-3 text-start font-medium">
+                    Price
+                  </th>
+                  <th scope="col" className="sticky top-0 bg-surface px-3 py-3 text-start font-medium">
+                    Stock
+                  </th>
+                  <th scope="col" className="sticky top-0 bg-surface px-3 py-3 text-start font-medium">
+                    Visible
+                  </th>
+                  <th scope="col" className="sticky top-0 bg-surface px-4 py-3 text-end font-medium">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {view.map((row) => (
+                  <tr key={row.id} className="border-b border-line last:border-0">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Thumb
+                          src={row.thumbUrl}
+                          alt={row.thumbAlt}
+                          className="h-14 w-11 shrink-0 rounded-xs"
+                        />
+                        <div className="min-w-0">
+                          <Link
+                            href={`/admin/products/${row.id}`}
+                            className="font-medium hover:text-cherry hover:underline"
+                          >
+                            {row.name}
+                          </Link>
+                          <p className="text-xs text-muted">
+                            {row.code} · {row.categoryName}
+                            {row.badge ? ` · ${row.badge}` : ""}
+                            {row.featured ? " · Featured" : ""}
+                          </p>
+                          {row.imageCount < 2 ? (
+                            <p className="text-xs font-medium text-warning">
+                              Needs at least 2 images to be shown
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">{price(row)}</td>
+                    <td className="px-3 py-3">
+                      <Select
+                        aria-label={`Stock status for ${row.name}`}
+                        value={row.stockStatus}
+                        disabled={busyId === row.id}
+                        onChange={(e) => changeStock(row, e.target.value as StockStatus)}
+                        className="min-w-36"
                       >
-                        {row.name}
-                      </Link>
-                      <p className="text-xs text-muted">
-                        {row.code} · {row.categoryName}
-                        {row.badge ? ` · ${row.badge}` : ""}
-                        {row.featured ? " · Featured" : ""}
-                      </p>
-                      {row.imageCount < 2 ? (
-                        <p className="text-xs font-medium text-warning">
-                          Needs at least 2 images to be shown
-                        </p>
-                      ) : null}
-                    </div>
+                        {STOCK_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {STOCK_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Switch
+                        checked={row.isVisible}
+                        disabled={busyId === row.id}
+                        onCheckedChange={(next) => toggleVisible(row, next)}
+                        aria-label={`Visible on site: ${row.name}`}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">{actions(row)}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: stacked cards */}
+          <ul className="space-y-3 md:hidden">
+            {view.map((row) => (
+              <li key={row.id} className="rounded-sm border border-line bg-surface p-3">
+                <div className="flex gap-3">
+                  <Thumb src={row.thumbUrl} alt={row.thumbAlt} className="h-20 w-16 shrink-0 rounded-xs" />
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/admin/products/${row.id}`} className="font-medium hover:text-cherry">
+                      {row.name}
+                    </Link>
+                    <p className="text-xs text-muted">
+                      {row.code} · {row.categoryName}
+                    </p>
+                    <p className="mt-1 text-sm">{price(row)}</p>
+                    {row.imageCount < 2 ? (
+                      <p className="text-xs font-medium text-warning">Needs at least 2 images to be shown</p>
+                    ) : null}
                   </div>
-                </td>
-                <td className="px-3 py-3">{price(row)}</td>
-                <td className="px-3 py-3">
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
+                  <label className="flex items-center gap-1 text-sm">
+                    <span className="text-ink-soft">Visible</span>
+                    <Switch
+                      checked={row.isVisible}
+                      disabled={busyId === row.id}
+                      onCheckedChange={(next) => toggleVisible(row, next)}
+                      aria-label={`Visible on site: ${row.name}`}
+                    />
+                  </label>
                   <Select
                     aria-label={`Stock status for ${row.name}`}
                     value={row.stockStatus}
                     disabled={busyId === row.id}
                     onChange={(e) => changeStock(row, e.target.value as StockStatus)}
-                    className="min-w-36"
+                    className="w-40"
                   >
                     {STOCK_STATUSES.map((s) => (
                       <option key={s} value={s}>
@@ -182,71 +249,13 @@ export function ProductsTable({ rows }: { rows: ProductRowView[] }) {
                       </option>
                     ))}
                   </Select>
-                </td>
-                <td className="px-3 py-3">
-                  <Switch
-                    checked={row.isVisible}
-                    disabled={busyId === row.id}
-                    onCheckedChange={(next) => toggleVisible(row, next)}
-                    aria-label={`Visible on site: ${row.name}`}
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end">{actions(row)}</div>
-                </td>
-              </tr>
+                </div>
+                <div className="mt-2">{actions(row)}</div>
+              </li>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile: stacked cards */}
-      <ul className="space-y-3 md:hidden">
-        {view.map((row) => (
-          <li key={row.id} className="rounded-sm border border-line bg-surface p-3">
-            <div className="flex gap-3">
-              <Thumb src={row.thumbUrl} alt={row.thumbAlt} className="h-20 w-16 shrink-0 rounded-xs" />
-              <div className="min-w-0 flex-1">
-                <Link href={`/admin/products/${row.id}`} className="font-medium hover:text-cherry">
-                  {row.name}
-                </Link>
-                <p className="text-xs text-muted">
-                  {row.code} · {row.categoryName}
-                </p>
-                <p className="mt-1 text-sm">{price(row)}</p>
-                {row.imageCount < 2 ? (
-                  <p className="text-xs font-medium text-warning">Needs at least 2 images to be shown</p>
-                ) : null}
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
-              <label className="flex items-center gap-1 text-sm">
-                <span className="text-ink-soft">Visible</span>
-                <Switch
-                  checked={row.isVisible}
-                  disabled={busyId === row.id}
-                  onCheckedChange={(next) => toggleVisible(row, next)}
-                  aria-label={`Visible on site: ${row.name}`}
-                />
-              </label>
-              <Select
-                aria-label={`Stock status for ${row.name}`}
-                value={row.stockStatus}
-                disabled={busyId === row.id}
-                onChange={(e) => changeStock(row, e.target.value as StockStatus)}
-                className="w-40"
-              >
-                {STOCK_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STOCK_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="mt-2">{actions(row)}</div>
-          </li>
-        ))}
-      </ul>
+          </ul>
+        </>
+      ) : null}
 
       <ConfirmDialog
         open={toDelete !== null}

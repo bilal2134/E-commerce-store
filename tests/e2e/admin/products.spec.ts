@@ -59,6 +59,12 @@ test.describe.serial("admin products", () => {
       "aria-checked",
       "true",
     );
+
+    // AS-02: the new product is live on the storefront immediately.
+    await page.goto(`/product/${SLUG}`);
+    await expect(page.getByRole("heading", { level: 1, name: NAME })).toBeVisible();
+    await page.goto("/shop/clutches");
+    await expect(page.getByRole("link", { name: NAME })).toBeVisible();
   });
 
   test("a duplicate slug shows a friendly error", async ({ page }) => {
@@ -121,11 +127,12 @@ test.describe.serial("admin products", () => {
     await expect(page.getByRole("link", { name: NAME, exact: true }).first()).toBeVisible();
   });
 
-  // TODO: enable once the storefront routes (src/app/(store)) are merged. Run with E2E_STOREFRONT=1.
-  test("product appears on the storefront when visible and disappears when hidden", async ({ page }) => {
-    test.skip(!process.env.E2E_STOREFRONT, "Storefront routes are not part of this branch yet");
-    await page.goto(`/product/${SLUG}`);
+  test("hidden product disappears from the storefront (AS-07)", async ({ page }) => {
+    const res = await page.goto(`/product/${SLUG}`);
+    expect(res?.status()).toBe(404);
     await expect(page.getByRole("heading", { name: NAME })).toHaveCount(0); // hidden by the previous test
+    await page.goto("/shop/clutches");
+    await expect(page.getByRole("link", { name: NAME })).toHaveCount(0);
   });
 
   test("delete asks for confirmation and removes the product", async ({ page }) => {

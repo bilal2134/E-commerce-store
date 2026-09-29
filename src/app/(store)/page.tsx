@@ -169,9 +169,9 @@ export default async function HomePage() {
 
       {home.collab.length ? (
         <section aria-labelledby="collab-title" className="mt-16 bg-ink py-12 text-petal md:mt-24 md:py-16">
-          <div className="container-page grid gap-8 lg:grid-cols-12 lg:items-center">
+          <div className="container-page grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center [&>*]:min-w-0">
             <div className="lg:col-span-4">
-              <h2 id="collab-title" className="type-display text-4xl text-petal md:text-5xl">
+              <h2 id="collab-title" className="type-display text-3xl break-words text-petal xs:text-4xl md:text-5xl">
                 {settings.collab.title || "The collab"}
               </h2>
               {settings.collab.body ? (

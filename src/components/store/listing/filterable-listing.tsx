@@ -188,7 +188,7 @@ function SortSelect({ value, onChange }: { value: SortOption; onChange: (v: Sort
   const id = useId();
   return (
     <div className="flex shrink-0 items-center gap-2">
-      <label htmlFor={id} className="hidden text-sm text-ink-soft sm:block">
+      <label htmlFor={id} className="sr-only text-sm text-ink-soft sm:not-sr-only">
         Sort
       </label>
       <select
