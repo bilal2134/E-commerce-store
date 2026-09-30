@@ -1,8 +1,9 @@
 import { formatPkr, priceInfo } from "@/domain/money";
+import { getDictionary } from "@/i18n/server";
 import { cn } from "@/lib/cn";
 
 /** Current price, with the original crossed out when on sale (CS-06, AS-10). */
-export function Price({
+export async function Price({
   pricePkr,
   salePricePkr,
   size = "sm",
@@ -13,6 +14,7 @@ export function Price({
   size?: "sm" | "lg";
   className?: string;
 }) {
+  const t = await getDictionary();
   const p = priceInfo(pricePkr, salePricePkr);
   const big = size === "lg";
   return (
@@ -20,16 +22,16 @@ export function Price({
       {p.original !== null ? (
         <>
           <span className={cn("font-semibold text-cherry", big ? "text-2xl" : "text-sm")}>
-            <span className="sr-only">Sale price </span>
+            <span className="sr-only">{t.product.salePrice} </span>
             {formatPkr(p.current)}
           </span>
           <s className={cn("text-muted", big ? "text-base" : "text-xs")}>
-            <span className="sr-only">Original price </span>
+            <span className="sr-only">{t.product.originalPrice} </span>
             {formatPkr(p.original)}
           </s>
           {big ? (
             <span className="rounded-xs bg-cherry-tint px-1.5 py-0.5 text-xs font-semibold text-cherry-deep">
-              {p.discountPercent}% off
+              {t.product.percentOff(p.discountPercent ?? 0)}
             </span>
           ) : null}
         </>

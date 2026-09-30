@@ -1,19 +1,21 @@
+import type { Route } from "next";
+import { localePath } from "@/i18n/config";
+import { getI18n } from "@/i18n/server";
 import { ButtonLink } from "@/components/ui/button";
 
-export function NotFoundView() {
+export async function NotFoundView() {
+  const { locale, t } = await getI18n();
   return (
     <div className="container-page flex flex-col items-start py-20 md:py-28">
-      <p className="text-sm font-medium text-ink-soft">Page not found</p>
-      <h1 className="type-display mt-2 text-5xl text-cherry md:text-6xl">This page has moved or sold out</h1>
-      <p className="mt-4 max-w-md text-ink-soft">
-        The link may be old, or the product is no longer listed. Browse the shop or search for what you need.
-      </p>
+      <p className="text-sm font-medium text-ink-soft">{t.errors.notFoundEyebrow}</p>
+      <h1 className="type-display mt-2 text-5xl text-cherry md:text-6xl">{t.errors.notFoundTitle}</h1>
+      <p className="mt-4 max-w-md text-ink-soft">{t.errors.notFoundBody}</p>
       <div className="mt-8 flex flex-wrap gap-3">
-        <ButtonLink href="/shop" size="lg">
-          Shop all
+        <ButtonLink href={localePath(locale, "/shop") as Route} size="lg">
+          {t.common.shopAll}
         </ButtonLink>
-        <ButtonLink href="/search" variant="secondary" size="lg">
-          Search
+        <ButtonLink href={localePath(locale, "/search") as Route} variant="secondary" size="lg">
+          {t.common.search}
         </ButtonLink>
       </div>
     </div>

@@ -23,7 +23,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: readonly Crumb[] }) {
                   >
                     {c.name}
                   </Link>
-                  <ChevronRightIcon size={12} />
+                  <ChevronRightIcon size={12} className="rtl:-scale-x-100" />
                 </>
               )}
             </li>

@@ -2,12 +2,15 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { PublicReview } from "@/server/catalog/queries";
 import { StarIcon } from "@/components/ui/icons";
+import { localePath } from "@/i18n/config";
+import { getI18n } from "@/i18n/server";
 import { ResponsiveImg } from "./responsive-image";
 
-export function Stars({ rating }: { rating: number }) {
+export async function Stars({ rating }: { rating: number }) {
+  const { t } = await getI18n();
   return (
     <span className="flex items-center gap-0.5 text-cherry">
-      <span className="sr-only">Rated {rating} out of 5</span>
+      <span className="sr-only">{t.reviews.rated(rating)}</span>
       {[1, 2, 3, 4, 5].map((n) => (
         <StarIcon key={n} size={14} filled={n <= rating} />
       ))}
@@ -15,7 +18,8 @@ export function Stars({ rating }: { rating: number }) {
   );
 }
 
-export function ReviewCard({ review }: { review: PublicReview }) {
+export async function ReviewCard({ review }: { review: PublicReview }) {
+  const { locale, t } = await getI18n();
   return (
     <figure className="flex h-full flex-col bg-surface p-5 ring-1 ring-line">
       {review.photo ? (
@@ -31,9 +35,9 @@ export function ReviewCard({ review }: { review: PublicReview }) {
         <span className="font-semibold text-ink">{review.customerName}</span>
         {review.product ? (
           <>
-            {" on "}
+            {` ${t.reviews.on} `}
             <Link
-              href={`/product/${review.product.slug}` as Route}
+              href={localePath(locale, `/product/${review.product.slug}`) as Route}
               className="underline underline-offset-4 hover:text-cherry"
             >
               {review.product.name}

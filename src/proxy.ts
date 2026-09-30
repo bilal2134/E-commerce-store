@@ -1,22 +1,40 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Optimistic gate only: sends cookie-less requests for /admin/<subpath> to the
- * login page so they do not render a skeleton first. This is NOT a security
- * boundary. Every admin page and Server Action calls requireAdmin(), which
- * validates the session against the database.
+ * Two jobs, both cheap and stateless:
+ *
+ * 1. Locale routing (CS-15). Storefront routes live under app/[lang]. English
+ *    keeps unprefixed public URLs (/shop/heels), rewritten internally to
+ *    /en/shop/heels; Urdu is public at /ur/...; /en/... redirects to the
+ *    unprefixed canonical URL so there is one URL per page.
+ *
+ * 2. Optimistic admin gate: cookie-less requests for /admin/<subpath> go to
+ *    the login page so they don't render a skeleton first. NOT a security
+ *    boundary — every admin page and Server Action calls requireAdmin().
  */
-const COOKIE_NAMES = ["usba_admin", "__Host-usba_admin"];
+const ADMIN_COOKIES = ["usba_admin", "__Host-usba_admin"];
 
 export function proxy(request: NextRequest) {
-  const hasCookie = COOKIE_NAMES.some((name) => request.cookies.has(name));
-  if (!hasCookie) {
-    return NextResponse.redirect(new URL("/admin", request.url), 303);
+  const { pathname, search } = request.nextUrl;
+
+  if (pathname.startsWith("/admin/")) {
+    const hasCookie = ADMIN_COOKIES.some((name) => request.cookies.has(name));
+    return hasCookie ? NextResponse.next() : NextResponse.redirect(new URL("/admin", request.url), 303);
   }
-  return NextResponse.next();
+
+  if (pathname === "/en" || pathname.startsWith("/en/")) {
+    const target = new URL(`${pathname.slice(3) || "/"}${search}`, request.url);
+    return NextResponse.redirect(target, 308);
+  }
+  if (pathname === "/ur" || pathname.startsWith("/ur/")) return NextResponse.next();
+
+  return NextResponse.rewrite(new URL(`/en${pathname === "/" ? "" : pathname}${search}`, request.url));
 }
 
 export const config = {
-  // `:path+` requires at least one sub-segment, so /admin itself (the login page) is untouched.
-  matcher: ["/admin/:path+"],
+  matcher: [
+    // Everything except API routes, Next internals, the admin login page and files with an extension.
+    "/((?!api/|_next/|admin$|.*\\.[a-zA-Z0-9]+$).*)",
+    "/admin/:path+",
+  ],
 };

@@ -1,5 +1,8 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { displayBadge, type ProductCard as ProductCardData } from "@/domain/product";
+import { localePath } from "@/i18n/config";
+import { getI18n } from "@/i18n/server";
 import { cn } from "@/lib/cn";
 import { BadgeTag, StockTag } from "./badge-tag";
 import { Price } from "./price";
@@ -9,7 +12,7 @@ import { SaveButton } from "./saved/save-button";
 /** Grid sizes: 2 cols mobile, 3 tablet, 4 desktop (max container 1440px). */
 export const CARD_SIZES = "(min-width: 80rem) 330px, (min-width: 64rem) 24vw, (min-width: 48rem) 32vw, 48vw";
 
-export function ProductCard({
+export async function ProductCard({
   product,
   priority = false,
   sizes = CARD_SIZES,
@@ -23,6 +26,7 @@ export function ProductCard({
   /** Second photo on hover (pointer devices); used on listing grids only. */
   showHoverImage?: boolean;
 }) {
+  const { locale, t } = await getI18n();
   const Heading = headingLevel;
   const soldOut = product.stockStatus === "out_of_stock";
   const badge = displayBadge(product);
@@ -58,13 +62,15 @@ export function ProductCard({
         <Heading className="text-sm leading-snug font-medium text-ink">
           {/* Stretched link: the whole card is one tap target with one accessible name. */}
           <Link
-            href={`/product/${product.slug}`}
+            href={localePath(locale, `/product/${product.slug}`) as Route}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-cherry"
           >
             {product.name}
           </Link>
         </Heading>
-        {product.collabPartner ? <p className="text-xs text-muted">with @{product.collabPartner}</p> : null}
+        {product.collabPartner ? (
+          <p className="text-xs text-muted">{t.product.withPartner(product.collabPartner)}</p>
+        ) : null}
         <Price pricePkr={product.pricePkr} salePricePkr={product.salePricePkr} />
       </div>
     </article>

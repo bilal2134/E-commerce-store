@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { formatPkr, priceInfo } from "@/domain/money";
@@ -8,16 +9,27 @@ import { buildSavedListMessage, decodeShareItems, encodeShareQuery, mergeSaved }
 import type { SearchIndexItem } from "@/domain/search";
 import { buttonClasses } from "@/components/ui/button";
 import { HeartIcon, TrashIcon, WhatsappIcon } from "@/components/ui/icons";
+import { localePath, type Locale } from "@/i18n/config";
+import { dictionaryFor, type Dictionary } from "@/i18n/dictionaries";
 import { cn } from "@/lib/cn";
 import { getSavedSnapshot, getServerSavedSnapshot, setSaved, subscribeSaved } from "./saved-store";
 
-const STOCK_TEXT = { in_stock: "In stock", preorder: "Preorder", out_of_stock: "Out of stock" } as const;
-
-function Row({ item, action }: { item: SearchIndexItem; action: React.ReactNode }) {
+function Row({
+  item,
+  action,
+  t,
+  locale,
+}: {
+  item: SearchIndexItem;
+  action: React.ReactNode;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const href = localePath(locale, `/product/${item.slug}`) as Route;
   const price = priceInfo(item.pricePkr, item.salePricePkr);
   return (
     <li className="flex gap-4 border-b border-line py-4">
-      <Link href={`/product/${item.slug}`} tabIndex={-1} aria-hidden="true" className="shrink-0">
+      <Link href={href} tabIndex={-1} aria-hidden="true" className="shrink-0">
         <span className="block aspect-[4/5] w-20 overflow-hidden bg-blush sm:w-24">
           {item.thumbUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- pre-generated variant, no optimizer
@@ -27,7 +39,7 @@ function Row({ item, action }: { item: SearchIndexItem; action: React.ReactNode 
       </Link>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <Link
-          href={`/product/${item.slug}`}
+          href={href}
           className="text-sm leading-snug font-medium text-ink underline-offset-4 hover:underline"
         >
           {item.name}
@@ -35,12 +47,12 @@ function Row({ item, action }: { item: SearchIndexItem; action: React.ReactNode 
         <p className="text-xs text-muted">{item.categoryName}</p>
         <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
           <span className={cn("font-semibold", price.original !== null ? "text-cherry" : "text-ink")}>
-            {price.original !== null ? <span className="sr-only">Sale price </span> : null}
+            {price.original !== null ? <span className="sr-only">{t.product.salePrice} </span> : null}
             {formatPkr(price.current)}
           </span>
           {price.original !== null ? (
             <s className="text-xs text-muted">
-              <span className="sr-only">Original price </span>
+              <span className="sr-only">{t.product.originalPrice} </span>
               {formatPkr(price.original)}
             </s>
           ) : null}
@@ -53,7 +65,7 @@ function Row({ item, action }: { item: SearchIndexItem; action: React.ReactNode 
             item.stockStatus === "out_of_stock" && "text-danger",
           )}
         >
-          {STOCK_TEXT[item.stockStatus]}
+          {t.stock[item.stockStatus]}
         </p>
         <div className="mt-1">{action}</div>
       </div>
@@ -74,7 +86,8 @@ function loadIndex(): Promise<SearchIndexItem[]> {
   return indexPromise;
 }
 
-export function SavedView({ whatsappNumber }: { whatsappNumber: string | null }) {
+export function SavedView({ whatsappNumber, locale }: { whatsappNumber: string | null; locale: Locale }) {
+  const t = dictionaryFor(locale);
   const saved = useSyncExternalStore(subscribeSaved, getSavedSnapshot, getServerSavedSnapshot);
   const [index, setIndex] = useState<SearchIndexItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -115,11 +128,11 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
   const loading = index === null;
 
   async function share() {
-    const url = `${window.location.origin}/saved${encodeShareQuery(items.map((i) => i.slug))}`;
+    const url = `${window.location.origin}${localePath(locale, "/saved")}${encodeShareQuery(items.map((i) => i.slug))}`;
     setShareUrl(url);
     if (typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches) {
       try {
-        await navigator.share({ title: "My USBA saved list", url });
+        await navigator.share({ title: t.saved.shareTitle, url });
         return;
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -127,9 +140,9 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
     }
     try {
       await navigator.clipboard.writeText(url);
-      setStatus("Link copied");
+      setStatus(t.saved.linkCopied);
     } catch {
-      setStatus("Copy the link below");
+      setStatus(t.saved.copyBelow);
     }
   }
 
@@ -141,9 +154,7 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
 
   return (
     <div className="mt-2">
-      <p className="max-w-prose text-sm text-ink-soft">
-        Your list is kept on this device. Share the link to open it anywhere.
-      </p>
+      <p className="max-w-prose text-sm text-ink-soft">{t.saved.intro}</p>
 
       <div className="sr-only" role="status" aria-live="polite">
         {status}
@@ -152,17 +163,19 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
       {sharedItems.length > 0 ? (
         <section aria-labelledby="shared-title" className="mt-6 bg-blush p-4 md:p-6">
           <h2 id="shared-title" className="text-lg font-semibold text-ink">
-            Shared list
+            {t.saved.sharedList}
           </h2>
           <ul className="mt-2">
             {sharedItems.map((item) => (
               <Row
                 key={item.slug}
                 item={item}
+                t={t}
+                locale={locale}
                 action={
                   savedSet.has(item.slug) ? (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-soft">
-                      <HeartIcon size={14} className="fill-cherry text-cherry" /> Saved
+                      <HeartIcon size={14} className="fill-cherry text-cherry" /> {t.product.saved}
                     </span>
                   ) : null
                 }
@@ -179,33 +192,32 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
                   sharedSlugs.filter((s) => bySlug.has(s)),
                 ),
               );
-              setStatus("Shared items saved to your list");
+              setStatus(t.saved.sharedSaved);
             }}
             className={buttonClasses({ variant: "primary", className: "mt-4" })}
           >
-            {allSharedSaved ? "All saved to your list" : "Save all to my list"}
+            {allSharedSaved ? t.saved.allSaved : t.saved.saveAll}
           </button>
         </section>
       ) : null}
 
       <section aria-labelledby="mine-title" className="mt-8">
         <h2 id="mine-title" className="text-lg font-semibold text-ink">
-          Your list{items.length > 0 ? ` (${items.length})` : ""}
+          {t.saved.yourList(items.length)}
         </h2>
 
         {loading ? (
-          <p className="mt-4 text-sm text-muted">Loading your saved items…</p>
+          <p className="mt-4 text-sm text-muted">{t.saved.loading}</p>
         ) : failed && saved.length > 0 ? (
-          <p className="mt-4 text-sm text-danger">
-            We couldn&rsquo;t load your saved items. Please try again.
-          </p>
+          <p className="mt-4 text-sm text-danger">{t.saved.loadError}</p>
         ) : items.length === 0 ? (
           <div className="mt-4 max-w-md">
-            <p className="text-base text-ink-soft">
-              Nothing saved yet. Tap the heart on any piece to keep it here.
-            </p>
-            <Link href="/shop" className={buttonClasses({ variant: "primary", className: "mt-4" })}>
-              Browse the shop
+            <p className="text-base text-ink-soft">{t.saved.empty}</p>
+            <Link
+              href={localePath(locale, "/shop") as Route}
+              className={buttonClasses({ variant: "primary", className: "mt-4" })}
+            >
+              {t.saved.browse}
             </Link>
           </div>
         ) : (
@@ -215,18 +227,21 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
                 <Row
                   key={item.slug}
                   item={item}
+                  t={t}
+                  locale={locale}
                   action={
                     <button
                       type="button"
                       onClick={() => {
                         setSaved(saved.filter((s) => s !== item.slug));
-                        setStatus(`Removed ${item.name}`);
+                        setStatus(t.saved.announceRemoved(item.name));
                       }}
-                      className="px-2text-sm -ms-2 inline-flex h-11 items-center gap-1.5 rounded-sm font-medium text-ink-soft hover:bg-blush hover:text-ink"
+                      className="-ms-2 inline-flex h-11 items-center gap-1.5 rounded-sm px-2 text-sm font-medium text-ink-soft hover:bg-blush hover:text-ink"
                     >
                       <TrashIcon size={16} />
                       <span>
-                        Remove<span className="sr-only"> {item.name}</span>
+                        {t.saved.removeShort}
+                        <span className="sr-only"> {item.name}</span>
                       </span>
                     </button>
                   }
@@ -243,8 +258,8 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
                   className={buttonClasses({ variant: "whatsapp", size: "lg" })}
                 >
                   <WhatsappIcon />
-                  Ask about these on WhatsApp
-                  <span className="sr-only"> (opens in a new tab)</span>
+                  {t.saved.askWhatsapp}
+                  <span className="sr-only"> {t.common.opensNewTab}</span>
                 </a>
               ) : null}
               <button
@@ -252,13 +267,13 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
                 onClick={share}
                 className={buttonClasses({ variant: "secondary", size: "lg", className: "border-control" })}
               >
-                Share your list
+                {t.saved.share}
               </button>
             </div>
             {shareUrl ? (
               <div className="mt-4 max-w-xl">
                 <label htmlFor="share-url" className="text-sm font-medium text-ink">
-                  Link to your list
+                  {t.saved.linkLabel}
                 </label>
                 <input
                   id="share-url"

@@ -47,7 +47,7 @@ export function SectionHeader({
           )}
         >
           {action.label}
-          <ChevronRightIcon size={16} />
+          <ChevronRightIcon size={16} className="rtl:-scale-x-100" />
         </Link>
       ) : null}
     </div>

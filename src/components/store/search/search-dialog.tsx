@@ -8,6 +8,8 @@ import { formatPkr, priceInfo } from "@/domain/money";
 import { searchDocs, type SearchIndexItem } from "@/domain/search";
 import { track } from "@/lib/analytics";
 import { SearchIcon } from "@/components/ui/icons";
+import { localePath, type Locale } from "@/i18n/config";
+import { dictionaryFor } from "@/i18n/dictionaries";
 import { Sheet } from "@/components/ui/sheet";
 
 let indexPromise: Promise<SearchIndexItem[]> | null = null;
@@ -25,7 +27,15 @@ function loadIndex(): Promise<SearchIndexItem[]> {
  * Header search (CS-10, Flow C-2): WAI-ARIA combobox with a listbox of live
  * suggestions. Without JavaScript the trigger is a plain link to /search.
  */
-export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label: string }[] }) {
+export function SearchDialog({
+  locale,
+  quickLinks,
+}: {
+  locale: Locale;
+  quickLinks: { href: Route; label: string }[];
+}) {
+  const t = dictionaryFor(locale);
+  const at = (path: string) => localePath(locale, path) as Route;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchIndexItem[] | null>(null);
@@ -77,7 +87,7 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
     } else if (e.key === "Enter" && active >= 0 && results[active]) {
       e.preventDefault();
       track("search", { query: q.slice(0, 60), selected: true });
-      go(`/product/${results[active].slug}` as Route);
+      go(at(`/product/${results[active].slug}`));
     }
   }
 
@@ -85,7 +95,7 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
     <>
       {/* Plain link on purpose: without JS it navigates; with JS it opens the sheet. */}
       <a
-        href="/search"
+        href={at("/search")}
         onClick={(e) => {
           e.preventDefault();
           setOpen(true);
@@ -101,9 +111,9 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
         className="inline-flex size-11 items-center justify-center gap-2 rounded-sm text-ink hover:bg-blush xl:w-auto xl:px-3"
       >
         <SearchIcon />
-        <span className="sr-only xl:not-sr-only xl:text-sm">Search</span>
+        <span className="sr-only xl:not-sr-only xl:text-sm">{t.common.search}</span>
       </a>
-      <Sheet open={open} onClose={close} title="Search products" side="top" hideTitle>
+      <Sheet open={open} onClose={close} title={t.search.title} side="top" hideTitle>
         <form
           role="search"
           action="/search"
@@ -111,13 +121,13 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
             e.preventDefault();
             if (!q) return;
             track("search", { query: q.slice(0, 60), selected: false });
-            go(`/search?q=${encodeURIComponent(q)}` as Route);
+            go(`${at("/search")}?q=${encodeURIComponent(q)}` as Route);
           }}
           className="flex items-center gap-2 border-b border-line px-4 py-3"
         >
           <SearchIcon className="shrink-0 text-muted" />
           <label htmlFor={`${listId}-input`} className="sr-only">
-            Search products
+            {t.search.title}
           </label>
           <input
             ref={inputRef}
@@ -132,7 +142,7 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
             aria-describedby={statusId}
             autoComplete="off"
             enterKeyHint="search"
-            placeholder="Search heels, bags, wallets…"
+            placeholder={t.search.placeholder}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -146,18 +156,18 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
             onClick={close}
             className="h-11 px-2 text-sm font-medium text-ink-soft hover:text-ink"
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </form>
 
         <p id={statusId} className="sr-only" aria-live="polite">
-          {q ? (index ? `${results.length} suggestions available` : "Loading suggestions") : ""}
+          {q ? (index ? t.search.suggestionsAvailable(results.length) : t.search.loading) : ""}
         </p>
 
         <div className="px-2 py-2">
           {q && results.length > 0 ? (
             <>
-              <ul id={listId} role="listbox" aria-label="Suggestions" className="flex flex-col">
+              <ul id={listId} role="listbox" aria-label={t.search.suggestions} className="flex flex-col">
                 {results.map((item, i) => {
                   const price = priceInfo(item.pricePkr, item.salePricePkr);
                   return (
@@ -169,7 +179,7 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
                       onMouseEnter={() => setActive(i)}
                       onClick={() => {
                         track("search", { query: q.slice(0, 60), selected: true });
-                        go(`/product/${item.slug}` as Route);
+                        go(at(`/product/${item.slug}`));
                       }}
                       className="flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 aria-selected:bg-blush"
                     >
@@ -189,8 +199,8 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
                         <span className="block truncate text-sm font-medium text-ink">{item.name}</span>
                         <span className="block text-xs text-muted">
                           {item.categoryName}
-                          {item.stockStatus === "out_of_stock" ? ", out of stock" : ""}
-                          {item.stockStatus === "preorder" ? ", preorder" : ""}
+                          {item.stockStatus === "out_of_stock" ? t.search.outOfStock : ""}
+                          {item.stockStatus === "preorder" ? t.search.preorder : ""}
                         </span>
                       </span>
                       <span className="text-sm font-semibold text-ink">{formatPkr(price.current)}</span>
@@ -199,22 +209,20 @@ export function SearchDialog({ quickLinks }: { quickLinks: { href: Route; label:
                 })}
               </ul>
               <Link
-                href={`/search?q=${encodeURIComponent(q)}` as Route}
+                href={`${at("/search")}?q=${encodeURIComponent(q)}` as Route}
                 onClick={close}
                 className="mt-1 flex h-11 items-center px-2 text-sm font-medium text-cherry underline-offset-4 hover:underline"
               >
-                See all results for “{q}”
+                {t.search.seeAllFor(q)}
               </Link>
             </>
           ) : q && index ? (
-            <p className="px-2 py-4 text-sm text-ink-soft">
-              No products match “{q}”. Try a shorter word, or browse a category below.
-            </p>
+            <p className="px-2 py-4 text-sm text-ink-soft">{t.search.noMatch(q)}</p>
           ) : null}
 
           {!q || (index && results.length === 0) ? (
-            <nav aria-label="Browse categories" className="px-2 pt-2 pb-3">
-              <p className="mb-2 text-xs font-medium text-muted">Browse</p>
+            <nav aria-label={t.nav.browseCategories} className="px-2 pt-2 pb-3">
+              <p className="mb-2 text-xs font-medium text-muted">{t.nav.browse}</p>
               <ul className="flex flex-wrap gap-2">
                 {quickLinks.map((l) => (
                   <li key={l.href}>

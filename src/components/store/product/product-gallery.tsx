@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ResponsiveImage } from "@/domain/images";
+import type { Locale } from "@/i18n/config";
+import { dictionaryFor } from "@/i18n/dictionaries";
 import { cn } from "@/lib/cn";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { ResponsiveImg } from "../responsive-image";
@@ -12,7 +14,16 @@ import { ResponsiveImg } from "../responsive-image";
  * photos stacked in a two-column grid so nothing is hidden behind a control.
  * Stable 4:5 frames prevent layout shift; only the first image is eager.
  */
-export function ProductGallery({ images, productName }: { images: ResponsiveImage[]; productName: string }) {
+export function ProductGallery({
+  images,
+  productName,
+  locale,
+}: {
+  images: ResponsiveImage[];
+  productName: string;
+  locale: Locale;
+}) {
+  const t = dictionaryFor(locale);
   const trackRef = useRef<HTMLUListElement>(null);
   const [index, setIndex] = useState(0);
   const count = images.length;
@@ -40,7 +51,11 @@ export function ProductGallery({ images, productName }: { images: ResponsiveImag
     const slide = track?.children[i] as HTMLElement | undefined;
     if (!track || !slide) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    track.scrollTo({ left: slide.offsetLeft - track.offsetLeft, behavior: reduce ? "auto" : "smooth" });
+    // Direction-agnostic (works in RTL, where scrollLeft is mirrored).
+    track.scrollBy({
+      left: slide.getBoundingClientRect().left - track.getBoundingClientRect().left,
+      behavior: reduce ? "auto" : "smooth",
+    });
   }, []);
 
   if (count === 0) {
@@ -48,16 +63,19 @@ export function ProductGallery({ images, productName }: { images: ResponsiveImag
   }
 
   return (
-    <section aria-roledescription="carousel" aria-label={`${productName} photos`} className="relative">
+    <section aria-roledescription="carousel" aria-label={t.product.photos(productName)} className="relative">
       <ul
         ref={trackRef}
         tabIndex={0}
-        aria-label={`Photos, ${count} total. Use left and right arrow keys to browse.`}
+        aria-label={t.product.photosHelp(count)}
         onKeyDown={(e) => {
-          if (e.key === "ArrowRight") {
+          // In RTL the next photo is to the left.
+          const forward = locale === "ur" ? "ArrowLeft" : "ArrowRight";
+          const back = locale === "ur" ? "ArrowRight" : "ArrowLeft";
+          if (e.key === forward) {
             e.preventDefault();
             goTo(Math.min(count - 1, index + 1));
-          } else if (e.key === "ArrowLeft") {
+          } else if (e.key === back) {
             e.preventDefault();
             goTo(Math.max(0, index - 1));
           }
@@ -71,7 +89,7 @@ export function ProductGallery({ images, productName }: { images: ResponsiveImag
           <li
             key={img.baseUrl}
             aria-roledescription="slide"
-            aria-label={`${i + 1} of ${count}`}
+            aria-label={t.product.slideOf(i + 1, count)}
             className={cn(
               "w-full shrink-0 snap-center lg:w-auto",
               i === 0 && count % 2 === 1 && "lg:col-span-2",
@@ -105,18 +123,18 @@ export function ProductGallery({ images, productName }: { images: ResponsiveImag
             onClick={() => goTo(Math.max(0, index - 1))}
             disabled={index === 0}
             className="absolute start-2 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-overlay disabled:opacity-0"
-            aria-label="Previous photo"
+            aria-label={t.product.previousPhoto}
           >
-            <ChevronLeftIcon />
+            <ChevronLeftIcon className="rtl:-scale-x-100" />
           </button>
           <button
             type="button"
             onClick={() => goTo(Math.min(count - 1, index + 1))}
             disabled={index === count - 1}
             className="absolute end-2 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-overlay disabled:opacity-0"
-            aria-label="Next photo"
+            aria-label={t.product.nextPhoto}
           >
-            <ChevronRightIcon />
+            <ChevronRightIcon className="rtl:-scale-x-100" />
           </button>
           <div className="mt-3 flex justify-center gap-1.5">
             {images.map((img, i) => (
@@ -124,7 +142,7 @@ export function ProductGallery({ images, productName }: { images: ResponsiveImag
                 key={img.baseUrl}
                 type="button"
                 onClick={() => goTo(i)}
-                aria-label={`Show photo ${i + 1}`}
+                aria-label={t.product.showPhoto(i + 1)}
                 aria-current={i === index ? "true" : undefined}
                 className="group inline-flex size-6 items-center justify-center"
               >

@@ -12,6 +12,8 @@ import {
 } from "@/domain/ordering";
 import type { ProductSize } from "@/domain/product";
 import { track } from "@/lib/analytics";
+import type { Locale } from "@/i18n/config";
+import { dictionaryFor } from "@/i18n/dictionaries";
 import { cn } from "@/lib/cn";
 import { buttonClasses } from "@/components/ui/button";
 import { InstagramIcon, WhatsappIcon } from "@/components/ui/icons";
@@ -38,13 +40,18 @@ export function OrderPanel({
   whatsappNumber,
   instagramHandle,
   preorderNote,
+  locale,
 }: {
   product: OrderPanelProduct;
   productUrl: string;
   whatsappNumber: string | null;
   instagramHandle: string | null;
   preorderNote: string;
+  locale: Locale;
 }) {
+  // UI strings follow the page locale; the WhatsApp message stays in English
+  // for USBA's order handling.
+  const t = dictionaryFor(locale);
   const requiresSize = product.sizes.length > 0;
   const [size, setSize] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,16 +65,28 @@ export function OrderPanel({
     track("product_view", { code: product.code });
   }, [product.code]);
 
-  // Sticky mobile bar appears once the user scrolls past the main CTA.
+  // Sticky mobile bar appears once the user has scrolled past the main CTA.
+  // A rAF-throttled scroll check (not IntersectionObserver): a jump from the
+  // page bottom straight to the top never "intersects", so IO would miss it.
   useEffect(() => {
     const el = ctaRef.current;
     if (!el) return;
-    // Hidden until the main CTA has scrolled *above* the viewport.
-    const io = new IntersectionObserver(([entry]) =>
-      setCtaVisible(!entry || entry.isIntersecting || entry.boundingClientRect.top > 0),
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      setCtaVisible(el.getBoundingClientRect().bottom > 0);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(check);
+    };
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   const availability = orderAvailability({
@@ -91,12 +110,12 @@ export function OrderPanel({
       : undefined;
   const isPreorder = product.stockStatus === "preorder";
   const soldOut = product.stockStatus === "out_of_stock";
-  const ctaLabel = isPreorder ? "Preorder on WhatsApp" : "Order on WhatsApp";
+  const ctaLabel = isPreorder ? t.product.preorderOnWhatsapp : t.product.orderOnWhatsapp;
 
   function onOrderClick(e: React.MouseEvent<HTMLAnchorElement>) {
     if (!availability.canOrder && availability.reason === "size_required") {
       e.preventDefault();
-      setError("Choose your size to continue.");
+      setError(t.product.chooseSize);
       sizeGroupRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
       const firstAvailable = sizeGroupRef.current?.querySelector<HTMLInputElement>("input:not(:disabled)");
       firstAvailable?.focus({ preventScroll: true });
@@ -123,7 +142,10 @@ export function OrderPanel({
       {requiresSize ? (
         <fieldset ref={sizeGroupRef} className="mt-6" aria-describedby={error ? `${ids}-error` : undefined}>
           <legend className="flex w-full items-baseline justify-between text-sm font-semibold text-ink">
-            <span>Size (EU){size ? <span className="font-normal text-ink-soft">: {size}</span> : null}</span>
+            <span>
+              {t.product.sizeEu}
+              {size ? <span className="font-normal text-ink-soft">: {size}</span> : null}
+            </span>
           </legend>
           <div className="mt-3 grid grid-cols-6 gap-2">
             {product.sizes.map((s) => (
@@ -151,7 +173,7 @@ export function OrderPanel({
                   )}
                 >
                   {s.label}
-                  {!s.isAvailable ? <span className="sr-only"> (sold out)</span> : null}
+                  {!s.isAvailable ? <span className="sr-only"> {t.product.soldOut}</span> : null}
                 </span>
               </label>
             ))}
@@ -171,7 +193,7 @@ export function OrderPanel({
               className="flex h-13 items-center justify-center rounded-sm bg-blush text-base font-semibold text-ink-soft"
               aria-disabled="true"
             >
-              Out of stock
+              {t.product.outOfStock}
             </p>
             {whatsappNumber && isValidWhatsappNumber(whatsappNumber) ? (
               <a
@@ -183,7 +205,7 @@ export function OrderPanel({
                 rel="noopener noreferrer"
                 className={buttonClasses({ variant: "secondary", size: "lg" })}
               >
-                Ask about a restock
+                {t.product.askRestock}
               </a>
             ) : null}
           </>
@@ -200,7 +222,7 @@ export function OrderPanel({
           </a>
         ) : (
           <p className="rounded-sm bg-warning-tint px-4 py-3 text-sm text-warning">
-            WhatsApp ordering isn&apos;t available right now. Please message us on Instagram.
+            {t.product.whatsappUnavailable}
           </p>
         )}
 
@@ -210,7 +232,7 @@ export function OrderPanel({
 
         {!soldOut && dmHandles.length ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-soft">
-            <span>Or send a DM:</span>
+            <span>{t.product.orSendDm}</span>
             {dmHandles.map((h) => (
               <a
                 key={h}
@@ -220,7 +242,8 @@ export function OrderPanel({
                 onClick={() => track("instagram_order_click", { code: product.code, handle: h })}
                 className="inline-flex min-h-11 items-center gap-1.5 font-medium text-ink underline underline-offset-4 hover:text-cherry"
               >
-                <InstagramIcon size={16} />@{h}
+                <InstagramIcon size={16} />
+                <bdi dir="ltr">@{h}</bdi>
               </a>
             ))}
             <button
@@ -228,10 +251,10 @@ export function OrderPanel({
               onClick={copyDetails}
               className="inline-flex min-h-11 items-center font-medium text-ink underline underline-offset-4 hover:text-cherry"
             >
-              {copied ? "Details copied" : "Copy order details"}
+              {copied ? t.product.detailsCopied : t.product.copyDetails}
             </button>
             <span className="sr-only" role="status">
-              {copied ? "Order details copied to clipboard" : ""}
+              {copied ? t.product.detailsCopiedStatus : ""}
             </span>
           </div>
         ) : null}
@@ -253,7 +276,11 @@ export function OrderPanel({
               <p className="truncate text-sm font-medium text-ink">{product.name}</p>
               <p className="text-sm font-semibold text-ink">
                 {formatPkr(price.current)}
-                {size ? <span className="font-normal text-ink-soft">, size {size}</span> : null}
+                {size ? (
+                  <span className="font-normal text-ink-soft">
+                    , {t.product.sizeWord} {size}
+                  </span>
+                ) : null}
               </p>
             </div>
             <a
@@ -264,7 +291,7 @@ export function OrderPanel({
               className={buttonClasses({ variant: "whatsapp", size: "md" })}
             >
               <WhatsappIcon size={18} />
-              {isPreorder ? "Preorder" : "Order"}
+              {isPreorder ? t.product.preorder : t.product.order}
             </a>
           </div>
         </div>

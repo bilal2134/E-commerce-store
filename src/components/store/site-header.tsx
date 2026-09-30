@@ -1,30 +1,40 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { buildInstagramProfileUrl } from "@/domain/ordering";
-import { INFO_LINKS, primaryNav } from "@/lib/navigation";
+import { localePath, localizeHref } from "@/i18n/config";
+import { getI18n } from "@/i18n/server";
+import { infoLinks, primaryNav } from "@/lib/navigation";
 import { getCatalog, getSettings } from "@/server/catalog/public";
 import { HeartIcon, InstagramIcon } from "@/components/ui/icons";
 import { DesktopNav } from "./desktop-nav";
+import { LanguageSwitch } from "./language-switch";
 import { MobileNav, type MobileNavGroup } from "./mobile-nav";
 import { SearchDialog } from "./search/search-dialog";
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={className}>
-      <span className="type-display text-[1.75rem] leading-none tracking-[0.06em] lg:text-[2rem]">USBA</span>
+    <span className={className} lang="en">
+      <span className="type-display wordmark text-[1.75rem] leading-none tracking-[0.06em] lg:text-[2rem]">
+        USBA
+      </span>
       <span className="sr-only"> Official</span>
     </span>
   );
 }
 
 export async function SiteHeader() {
-  const [{ categories }, settings] = await Promise.all([getCatalog(), getSettings()]);
-  const links = primaryNav(categories);
-  const collections = links.filter((l) => l.href === "/shop/collab" || l.href === "/shop/sale");
+  const [{ categories }, settings, { locale, t }] = await Promise.all([
+    getCatalog(),
+    getSettings(),
+    getI18n(),
+  ]);
+  const at = (path: string) => localePath(locale, path) as Route;
+  const links = primaryNav(categories, locale, t);
+  const collections = links.filter((l) => l.href === at("/shop/collab") || l.href === at("/shop/sale"));
   const groups: MobileNavGroup[] = categories.map((root) => ({
     title: root.name,
-    href: `/shop/${root.slug}` as Route,
-    children: root.children.map((c) => ({ href: `/shop/${c.slug}` as Route, label: c.name })),
+    href: at(`/shop/${root.slug}`),
+    children: root.children.map((c) => ({ href: at(`/shop/${c.slug}`), label: c.name })),
   }));
   const instagramUrl = settings.instagramHandle ? buildInstagramProfileUrl(settings.instagramHandle) : null;
 
@@ -35,7 +45,7 @@ export async function SiteHeader() {
           <p className="container-page flex min-h-9 items-center justify-center py-1.5 text-center text-xs sm:text-sm">
             {settings.announcement.href ? (
               <Link
-                href={settings.announcement.href as Route}
+                href={localizeHref(locale, settings.announcement.href) as Route}
                 className="underline decoration-petal/50 underline-offset-4 hover:decoration-petal"
               >
                 {settings.announcement.text}
@@ -50,27 +60,28 @@ export async function SiteHeader() {
         <div className="container-page flex h-[var(--header-height)] items-center gap-2 lg:gap-4 xl:gap-6">
           <div className="flex flex-1 items-center lg:flex-none">
             <MobileNav
+              locale={locale}
               groups={groups}
               collections={collections}
-              info={INFO_LINKS}
+              info={infoLinks(locale, t)}
               instagramUrl={instagramUrl}
             />
-            <Link href="/" className="hidden text-ink lg:inline-flex" aria-label="USBA Official — home">
+            <Link href={at("/")} className="hidden text-ink lg:inline-flex" aria-label={t.common.homeLink}>
               <Wordmark />
             </Link>
           </div>
-          <Link href="/" className="text-ink lg:hidden" aria-label="USBA Official — home">
+          <Link href={at("/")} className="text-ink lg:hidden" aria-label={t.common.homeLink}>
             <Wordmark />
           </Link>
           <div className="hidden flex-1 lg:block">
-            <DesktopNav links={links} />
+            <DesktopNav links={links} label={t.nav.primary} />
           </div>
           <div className="flex flex-1 items-center justify-end gap-1 lg:flex-none">
-            <SearchDialog quickLinks={links.map((l) => ({ href: l.href, label: l.label }))} />
+            <SearchDialog locale={locale} quickLinks={links.map((l) => ({ href: l.href, label: l.label }))} />
             <Link
-              href="/saved"
+              href={at("/saved")}
               data-saved-link
-              aria-label="Saved items"
+              aria-label={t.saved.headerLabel}
               className="relative inline-flex size-11 items-center justify-center rounded-sm text-ink hover:bg-blush"
             >
               <HeartIcon />
@@ -80,6 +91,7 @@ export async function SiteHeader() {
                 className="absolute end-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full bg-cherry px-1 text-2xs leading-4 font-semibold text-white"
               />
             </Link>
+            <LanguageSwitch locale={locale} className="hidden sm:inline-flex" />
             {instagramUrl ? (
               <a
                 href={instagramUrl}
@@ -88,7 +100,7 @@ export async function SiteHeader() {
                 className="hidden size-11 items-center justify-center rounded-sm text-ink hover:bg-blush sm:inline-flex"
               >
                 <InstagramIcon />
-                <span className="sr-only">USBA on Instagram (opens in a new tab)</span>
+                <span className="sr-only">{t.common.instagramNewTab}</span>
               </a>
             ) : null}
           </div>

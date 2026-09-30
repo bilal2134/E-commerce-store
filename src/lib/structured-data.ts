@@ -52,8 +52,9 @@ export function breadcrumbJsonLd(siteUrl: string, crumbs: readonly Crumb[]): Jso
   };
 }
 
-export function productJsonLd(siteUrl: string, product: ProductDetail): Json {
-  const url = `${siteUrl}/product/${product.slug}`;
+/** `pagePath` is the localized page path (defaults to the English URL). */
+export function productJsonLd(siteUrl: string, product: ProductDetail, pagePath?: string): Json {
+  const url = `${siteUrl}${pagePath ?? `/product/${product.slug}`}`;
   const price = priceInfo(product.pricePkr, product.salePricePkr);
   const offer: Json = {
     "@type": "Offer",

@@ -1,4 +1,5 @@
 import { HeartIcon } from "@/components/ui/icons";
+import { getDictionary } from "@/i18n/server";
 import { cn } from "@/lib/cn";
 
 /**
@@ -10,7 +11,7 @@ import { cn } from "@/lib/cn";
  */
 const HEART_FILL = "[&[aria-pressed=true]_svg]:fill-cherry [&[aria-pressed=true]_svg]:text-cherry";
 
-export function SaveButton({
+export async function SaveButton({
   slug,
   name,
   variant = "card",
@@ -21,6 +22,7 @@ export function SaveButton({
   variant?: "card" | "page";
   className?: string;
 }) {
+  const t = await getDictionary();
   if (variant === "card") {
     return (
       <button
@@ -28,7 +30,7 @@ export function SaveButton({
         data-save-slug={slug}
         data-save-name={name}
         aria-pressed="false"
-        aria-label={`Save ${name}`}
+        aria-label={t.product.save(name)}
         className={cn(
           "group/save absolute end-0 top-0 z-10 flex size-11 items-center justify-center text-ink",
           HEART_FILL,
@@ -54,8 +56,8 @@ export function SaveButton({
       )}
     >
       <HeartIcon size={18} />
-      <span className="group-aria-pressed/save:hidden">Save to your list</span>
-      <span className="hidden group-aria-pressed/save:inline">Saved</span>
+      <span className="group-aria-pressed/save:hidden">{t.product.saveToList}</span>
+      <span className="hidden group-aria-pressed/save:inline">{t.product.saved}</span>
     </button>
   );
 }

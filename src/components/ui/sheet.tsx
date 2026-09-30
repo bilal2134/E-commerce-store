@@ -18,6 +18,7 @@ export function Sheet({
   footer,
   className,
   hideTitle = false,
+  closeLabel = "Close",
 }: {
   open: boolean;
   onClose: () => void;
@@ -27,6 +28,7 @@ export function Sheet({
   footer?: ReactNode;
   className?: string;
   hideTitle?: boolean;
+  closeLabel?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -81,7 +83,7 @@ export function Sheet({
             type="button"
             onClick={onClose}
             className="-me-2 inline-flex size-11 items-center justify-center rounded-sm text-ink hover:bg-blush"
-            aria-label="Close"
+            aria-label={closeLabel}
           >
             <CloseIcon />
           </button>

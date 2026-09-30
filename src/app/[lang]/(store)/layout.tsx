@@ -1,0 +1,26 @@
+import { SavedProvider } from "@/components/store/saved/saved-provider";
+import { SiteFooter } from "@/components/store/site-footer";
+import { SiteHeader } from "@/components/store/site-header";
+import { AnalyticsScript } from "@/components/store/analytics-script";
+import { getI18n } from "@/i18n/server";
+
+export default async function StoreLayout({ children }: LayoutProps<"/[lang]">) {
+  const { locale, t } = await getI18n();
+  return (
+    <>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-sm focus:bg-ink focus:px-4 focus:py-3 focus:text-sm focus:text-petal"
+      >
+        {t.common.skipToContent}
+      </a>
+      <SiteHeader />
+      <main id="main" tabIndex={-1} className="focus:outline-none">
+        {children}
+      </main>
+      <SiteFooter />
+      <AnalyticsScript />
+      <SavedProvider locale={locale} />
+    </>
+  );
+}

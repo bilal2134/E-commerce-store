@@ -6,10 +6,11 @@ import type { NavLink } from "@/lib/navigation";
 import { cn } from "@/lib/cn";
 
 /** Desktop category bar; marks the current section with aria-current. */
-export function DesktopNav({ links }: { links: NavLink[] }) {
-  const pathname = usePathname();
+export function DesktopNav({ links, label }: { links: NavLink[]; label: string }) {
+  // The storefront is rewritten to /en/... internally; compare public paths.
+  const pathname = usePathname().replace(/^\/en(?=\/|$)/, "") || "/";
   return (
-    <nav aria-label="Primary" className="hidden lg:block">
+    <nav aria-label={label} className="hidden lg:block">
       <ul className="flex items-center xl:gap-x-2">
         {links.map((l) => {
           const current = pathname === l.href;

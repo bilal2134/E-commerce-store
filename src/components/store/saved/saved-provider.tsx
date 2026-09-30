@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Locale } from "@/i18n/config";
+import { dictionaryFor } from "@/i18n/dictionaries";
 import { getSavedSnapshot, subscribeSaved, toggleSavedSlug } from "./saved-store";
 
 /**
@@ -9,7 +11,8 @@ import { getSavedSnapshot, subscribeSaved, toggleSavedSlug } from "./saved-store
  * `aria-pressed` and the header count in sync (mount, toggle, other tabs,
  * client navigations via a MutationObserver) and announces changes.
  */
-export function SavedProvider() {
+export function SavedProvider({ locale }: { locale: Locale }) {
+  const t = dictionaryFor(locale);
   const [message, setMessage] = useState("");
   const clearTimer = useRef<number | null>(null);
 
@@ -25,7 +28,7 @@ export function SavedProvider() {
       }
       const count = saved.size;
       for (const link of document.querySelectorAll<HTMLElement>("[data-saved-link]")) {
-        const label = count > 0 ? `Saved items, ${count}` : "Saved items";
+        const label = count > 0 ? t.saved.headerLabelCount(count) : t.saved.headerLabel;
         if (link.getAttribute("aria-label") !== label) link.setAttribute("aria-label", label);
         const badge = link.querySelector<HTMLElement>("[data-saved-count]");
         if (badge) {
@@ -57,7 +60,7 @@ export function SavedProvider() {
       const name = btn.dataset.saveName ?? "item";
       const nowSaved = toggleSavedSlug(slug);
       // TODO(analytics): track "save_product" / "unsave_product" once those events exist in src/lib/analytics.ts.
-      announce(nowSaved ? `Saved ${name}` : `Removed ${name}`);
+      announce(nowSaved ? t.saved.announceSaved(name) : t.saved.announceRemoved(name));
     };
 
     sync();
@@ -73,7 +76,7 @@ export function SavedProvider() {
       if (frame) cancelAnimationFrame(frame);
       if (clearTimer.current) window.clearTimeout(clearTimer.current);
     };
-  }, []);
+  }, [t]);
 
   return (
     <div role="status" aria-live="polite" className="sr-only">

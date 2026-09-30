@@ -248,3 +248,49 @@ html:has(dialog[open]) {
     opacity: 0;
   }
 }
+
+/*
+ * Urdu (CS-15). Latin text (brand, product names, prices) keeps Hanken/Bodoni;
+ * Urdu glyphs fall through to Noto Nastaliq Urdu. Nastaliq needs generous
+ * line-height and must never be letter-spaced (it breaks the joined script).
+ */
+/* Urdu glyphs come from system fonts (no web-font download): Noto Nastaliq
+   Urdu (iOS, Android, macOS), Jameel Noori / Urdu Typesetting (Windows),
+   Naskh as a last resort. Web Latin fonts come first because their
+   unicode-range is Latin-only; next/font's "… Fallback" faces (local Arial,
+   which also contains Arabic glyphs) must come after the Urdu fonts. */
+html[lang="ur"] {
+  --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", "Noto Naskh Arabic";
+  --font-sans:
+    "Hanken Grotesk", var(--font-urdu), "Hanken Grotesk Fallback", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: "Bodoni Moda", var(--font-urdu), "Bodoni Moda Fallback", Georgia, serif;
+}
+html[lang="ur"] body {
+  line-height: 2;
+}
+html[lang="ur"] .type-display,
+html[lang="ur"] .type-title {
+  letter-spacing: 0;
+  line-height: 1.4 !important;
+}
+html[lang="ur"] .wordmark {
+  letter-spacing: 0.06em;
+  line-height: 1 !important;
+}
+html[lang="ur"] :where(p, li, dd, span, label, a, button, legend, summary) {
+  letter-spacing: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[dir="rtl"] dialog.sheet-left[open] {
+    --sheet-from: translateX(100%);
+  }
+  html[dir="rtl"] dialog.sheet-right[open] {
+    --sheet-from: translateX(-100%);
+  }
+}
+
+/* Mixed-direction content: owner-entered English text on Urdu pages takes its
+   own direction per paragraph (punctuation lands on the right side). */
+html[dir="rtl"] :where(p, a, h1, h2, h3, h4, dd, dt, figcaption, blockquote, summary) {
+  unicode-bidi: plaintext;
+}

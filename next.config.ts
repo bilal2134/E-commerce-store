@@ -61,6 +61,8 @@ const nextConfig: NextConfig = {
     storefront: { stale: 300, revalidate: 900, expire: 86400 },
   },
   experimental: {
+    // Fallback 404 for URLs outside both root layouts ([lang] storefront, /admin).
+    globalNotFound: true,
     // Tailwind output is small (~12 KB raw); inlining removes a render-blocking request.
     inlineCss: true,
     serverActions: {
