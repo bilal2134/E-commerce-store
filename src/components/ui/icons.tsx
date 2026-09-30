@@ -156,7 +156,7 @@ export const HeartIcon = (p: IconProps) => (
     <path d="M12 20.2s-7.6-4.6-7.6-10.3A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.6 2.7c0 5.7-7.6 10.3-7.6 10.3z" />
   </Svg>
 );
-export const LogoutIcon =(p: IconProps) => (
+export const LogoutIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M14 4.5H5.5v15H14M10 12h10M16.5 8.5 20 12l-3.5 3.5" />
   </Svg>

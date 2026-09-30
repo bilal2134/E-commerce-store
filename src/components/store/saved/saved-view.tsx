@@ -222,7 +222,7 @@ export function SavedView({ whatsappNumber }: { whatsappNumber: string | null })
                         setSaved(saved.filter((s) => s !== item.slug));
                         setStatus(`Removed ${item.name}`);
                       }}
-                      className="-ms-2 inline-flex h-11 items-center gap-1.5 rounded-sm px-2text-sm font-medium text-ink-soft hover:bg-blush hover:text-ink"
+                      className="px-2text-sm -ms-2 inline-flex h-11 items-center gap-1.5 rounded-sm font-medium text-ink-soft hover:bg-blush hover:text-ink"
                     >
                       <TrashIcon size={16} />
                       <span>
