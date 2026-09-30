@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   foreignKey,
@@ -15,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { ANALYTICS_EVENT_TYPES } from "../../domain/analytics";
 import { BADGES, COLORS, STOCK_STATUSES } from "../../domain/catalog";
 import { ORDER_CHANNELS, ORDER_STATUSES } from "../../domain/orders";
 import { REVIEW_SOURCES, REVIEW_STATUSES } from "../../domain/reviews";
@@ -411,5 +413,30 @@ export const instagramPosts = pgTable(
     index("instagram_posts_position_idx").on(t.position),
     uniqueIndex("instagram_posts_storage_key_key").on(t.storageKey),
     check("instagram_posts_url_format", sql`${t.postUrl} ~ '^https://www\.instagram\.com/'`),
+  ],
+);
+
+/* ------------------------------------------------------------------ */
+/* First-party analytics (AS-19): cookie-free, no raw IP or user agent  */
+/* ------------------------------------------------------------------ */
+
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    type: text("type").$type<(typeof ANALYTICS_EVENT_TYPES)[number]>().notNull(),
+    productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+    categorySlug: text("category_slug"),
+    /** sha256(dailySalt + ipKey + userAgent + host), 32 hex chars; not linkable across days. */
+    visitorDayHash: text("visitor_day_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("analytics_events_type_created_idx").on(t.type, t.createdAt),
+    index("analytics_events_product_created_idx").on(t.productId, t.createdAt),
+    check(
+      "analytics_events_type_valid",
+      sql`${t.type} in (${sql.raw(ANALYTICS_EVENT_TYPES.map((v) => `'${v}'`).join(", "))})`,
+    ),
   ],
 );

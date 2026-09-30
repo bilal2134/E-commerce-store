@@ -7,6 +7,8 @@ import { formatDateTime } from "@/components/admin/format";
 import { OrderStatusPill, PageHeader, Panel, EmptyState } from "@/components/admin/ui";
 import { formatPkr } from "@/domain/money";
 import { getDashboard } from "@/server/admin/dashboard";
+import { getInsights } from "@/server/admin/insights";
+import { InsightsPanel } from "./_components/insights-panel";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/server/db/client";
 import { cn } from "@/lib/cn";
@@ -16,7 +18,7 @@ export const instant = false;
 
 export default async function DashboardPage() {
   await requireAdmin();
-  const data = await getDashboard(db());
+  const [data, insights] = await Promise.all([getDashboard(db()), getInsights(db())]);
   const open = data.checklist.filter((c) => !c.done);
 
   const stats: { label: string; value: number; href: Route }[] = [
@@ -159,6 +161,8 @@ export default async function DashboardPage() {
           </Panel>
         </div>
       </div>
+
+      <InsightsPanel data={insights} />
     </>
   );
 }

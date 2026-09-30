@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { JsonLd } from "../json-ld";
 import { ProductCard } from "../product-card";
 import { Breadcrumbs } from "../breadcrumbs";
+import { CategoryViewTracker } from "./category-view-tracker";
 import { FilterableListing } from "./filterable-listing";
 
 /** Server-rendered listing page body shared by /shop and /shop/[slug]. */
@@ -44,6 +45,7 @@ export function ListingView({
   return (
     <div className="container-page pt-4 md:pt-6">
       <JsonLd data={breadcrumbJsonLd(siteUrl, listing.breadcrumbs)} />
+      {listing.slug ? <CategoryViewTracker slug={listing.slug} /> : null}
       <Breadcrumbs crumbs={listing.breadcrumbs} />
       <header className="mt-4 mb-5 md:mt-6 md:mb-7">
         <h1
