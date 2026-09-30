@@ -50,3 +50,6 @@ next-env.d.ts
 
 # agent worktrees
 /.claude/worktrees/
+
+# Local scratch (screenshots etc.)
+.tmp/

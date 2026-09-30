@@ -265,6 +265,23 @@ html[lang="ur"] {
     "Hanken Grotesk", var(--font-urdu), "Hanken Grotesk Fallback", "Segoe UI", Tahoma, system-ui, sans-serif;
   --font-display: "Bodoni Moda", var(--font-urdu), "Bodoni Moda Fallback", Georgia, serif;
 }
+/* Owner logo (public/usba-logo.png via pnpm brand:assets) as a mask painted in
+   the current text colour, so it follows ink/hover/dark contexts. */
+.wordmark-logo {
+  display: inline-block;
+  vertical-align: middle;
+  aspect-ratio: 304 / 101;
+  background-color: currentColor;
+  -webkit-mask: url("/brand/usba-wordmark.png") center / contain no-repeat;
+  mask: url("/brand/usba-wordmark.png") center / contain no-repeat;
+}
+@media (forced-colors: active) {
+  .wordmark-logo {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
+}
+
 html[lang="ur"] body {
   line-height: 2;
 }
@@ -272,10 +289,6 @@ html[lang="ur"] .type-display,
 html[lang="ur"] .type-title {
   letter-spacing: 0;
   line-height: 1.4 !important;
-}
-html[lang="ur"] .wordmark {
-  letter-spacing: 0.06em;
-  line-height: 1 !important;
 }
 html[lang="ur"] :where(p, li, dd, span, label, a, button, legend, summary) {
   letter-spacing: 0;

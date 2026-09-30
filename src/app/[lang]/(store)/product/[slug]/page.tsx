@@ -9,6 +9,7 @@ import { sortProducts } from "@/domain/listing";
 import { localePath, pageAlternates } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
 import { localizeCrumbs } from "@/lib/localize-listing";
+import { baseOpenGraph, DEFAULT_SHARE_IMAGE } from "@/lib/open-graph";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/structured-data";
 import { env } from "@/server/config/env";
 import {
@@ -49,14 +50,17 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/product/[s
     description,
     alternates: pageAlternates(locale, `/product/${product.slug}`),
     openGraph: {
+      ...baseOpenGraph(locale, t),
       title: `${product.name} | ${t.meta.siteName}`,
       description,
       url: localePath(locale, `/product/${product.slug}`),
-      images: product.images.slice(0, 1).map((img) => ({
-        url: pickVariant(img, 1200),
-        width: 1200,
-        alt: img.alt,
-      })),
+      images: product.images.length
+        ? product.images.slice(0, 1).map((img) => ({
+            url: pickVariant(img, 1200),
+            width: 1200,
+            alt: img.alt,
+          }))
+        : [DEFAULT_SHARE_IMAGE],
     },
   };
 }

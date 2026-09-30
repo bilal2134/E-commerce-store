@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { preconnect } from "react-dom";
 import { LOCALE_META, LOCALES } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
+import { baseOpenGraph } from "@/lib/open-graph";
 import { env } from "@/server/config/env";
 import { bodoni, hanken } from "../fonts";
 import "../globals.css";
@@ -18,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: t.meta.defaultTitle, template: `%s | ${t.meta.siteName}` },
     description: t.meta.defaultDescription,
     applicationName: t.meta.siteName,
-    openGraph: { siteName: t.meta.siteName, type: "website", locale: LOCALE_META[locale].ogLocale },
+    openGraph: baseOpenGraph(locale, t),
     twitter: { card: "summary_large_image" },
     formatDetection: { telephone: false },
   };

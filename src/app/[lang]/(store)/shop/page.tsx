@@ -5,6 +5,7 @@ import { getI18n } from "@/i18n/server";
 import { localizeListing } from "@/lib/localize-listing";
 import { listingNavLinks } from "@/lib/shop-nav";
 import { env } from "@/server/config/env";
+import { baseOpenGraph } from "@/lib/open-graph";
 import { getCatalog } from "@/server/catalog/public";
 import { ListingView } from "@/components/store/listing/listing-view";
 
@@ -14,7 +15,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t.listing.shopAllTitle,
     description: t.meta.shopAllDescription,
     alternates: pageAlternates(locale, "/shop"),
-    openGraph: { title: `${t.listing.shopAllTitle} | ${t.meta.siteName}`, url: localePath(locale, "/shop") },
+    openGraph: {
+      ...baseOpenGraph(locale, t),
+      title: `${t.listing.shopAllTitle} | ${t.meta.siteName}`,
+      url: localePath(locale, "/shop"),
+    },
   };
 }
 

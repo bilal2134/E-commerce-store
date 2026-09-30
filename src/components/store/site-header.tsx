@@ -11,13 +11,12 @@ import { LanguageSwitch } from "./language-switch";
 import { MobileNav, type MobileNavGroup } from "./mobile-nav";
 import { SearchDialog } from "./search/search-dialog";
 
+/** The owner's script "USBA" logo, painted in the current text colour. */
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={className} lang="en">
-      <span className="type-display wordmark text-[1.75rem] leading-none tracking-[0.06em] lg:text-[2rem]">
-        USBA
-      </span>
-      <span className="sr-only"> Official</span>
+      <span aria-hidden="true" className="wordmark-logo h-8 lg:h-9" />
+      <span className="sr-only">USBA Official</span>
     </span>
   );
 }

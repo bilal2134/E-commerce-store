@@ -12,7 +12,10 @@ export default function AdminLoginPage() {
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <p className="type-title text-4xl">USBA</p>
+          <p className="text-ink">
+            <span aria-hidden="true" className="wordmark-logo h-14" />
+            <span className="sr-only">USBA</span>
+          </p>
           <p className="mt-1 text-sm text-muted">Store admin</p>
         </div>
         <div className="rounded-sm border border-line bg-surface p-5 sm:p-6">

@@ -5,6 +5,7 @@ import { pickVariant } from "@/domain/images";
 import { localePath, pageAlternates } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
 import { localizeListing } from "@/lib/localize-listing";
+import { baseOpenGraph, DEFAULT_SHARE_IMAGE } from "@/lib/open-graph";
 import { listingNavLinks } from "@/lib/shop-nav";
 import { env } from "@/server/config/env";
 import { getCatalog } from "@/server/catalog/public";
@@ -27,12 +28,13 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/shop/[slug
     description,
     alternates: pageAlternates(locale, `/shop/${slug}`),
     openGraph: {
+      ...baseOpenGraph(locale, t),
       title: `${listing.title} | ${t.meta.siteName}`,
       description,
       url: localePath(locale, `/shop/${slug}`),
       images: listing.products[0]?.image
         ? [{ url: pickVariant(listing.products[0].image, 1200), alt: listing.products[0].image.alt }]
-        : undefined,
+        : [DEFAULT_SHARE_IMAGE],
     },
   };
 }

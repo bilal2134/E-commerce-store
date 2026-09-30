@@ -100,8 +100,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <aside className="hidden border-e border-line bg-surface lg:block">
         <div className="sticky top-0 flex h-dvh flex-col gap-6 p-4">
           <Link href="/admin/dashboard" className="px-3 pt-2">
-            <span className="type-title block text-xl">USBA</span>
-            <span className="text-xs text-muted">Store admin</span>
+            <span aria-hidden="true" className="wordmark-logo h-8 text-ink" />
+            <span className="sr-only">USBA</span>
+            <span className="block text-xs text-muted">Store admin</span>
           </Link>
           <CurrentNav />
           <div className="mt-auto">
@@ -114,7 +115,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-30 border-b border-line bg-surface lg:hidden">
           <div className="flex h-14 items-center justify-between px-4">
             <Link href="/admin/dashboard" className="flex items-baseline gap-2">
-              <span className="type-title text-xl">USBA</span>
+              <span aria-hidden="true" className="wordmark-logo h-7 self-center text-ink" />
+              <span className="sr-only">USBA</span>
               <span className="text-xs text-muted">Store admin</span>
             </Link>
             <button

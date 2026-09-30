@@ -29,7 +29,8 @@
     "admin:create": "tsx --conditions=react-server --env-file-if-exists=.env scripts/create-admin.ts",
     "setup": "pnpm infra:up && pnpm storage:setup && pnpm db:migrate && pnpm db:seed",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm build",
-    "storage:cleanup": "tsx --conditions=react-server --env-file-if-exists=.env scripts/cleanup-orphans.ts"
+    "storage:cleanup": "tsx --conditions=react-server --env-file-if-exists=.env scripts/cleanup-orphans.ts",
+    "brand:assets": "tsx scripts/brand-assets.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

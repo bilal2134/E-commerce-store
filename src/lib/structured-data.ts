@@ -24,6 +24,7 @@ export function organizationJsonLd(opts: { siteUrl: string; instagramHandles: st
     "@id": `${opts.siteUrl}/#organization`,
     name: "USBA Official",
     url: opts.siteUrl,
+    logo: `${opts.siteUrl}/brand/usba-logo-512.png`,
     sameAs: opts.instagramHandles.map((h) => `https://www.instagram.com/${h}/`),
   };
 }
