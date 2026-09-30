@@ -175,10 +175,10 @@ export default async function HomePage() {
       {home.collab.length ? (
         <section aria-labelledby="collab-title" className="mt-16 bg-ink py-12 text-petal md:mt-24 md:py-16">
           <div className="container-page grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center [&>*]:min-w-0">
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-5">
               <h2
                 id="collab-title"
-                className="type-display text-3xl break-words text-petal xs:text-4xl md:text-5xl"
+                className="type-display text-3xl break-words text-petal xs:text-4xl xl:text-5xl"
               >
                 {settings.collab.title || "The collab"}
               </h2>
@@ -194,7 +194,7 @@ export default async function HomePage() {
                 Shop the collab
               </ButtonLink>
             </div>
-            <ul className="scroller -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 lg:col-span-8 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0">
+            <ul className="scroller -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 lg:col-span-7 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0">
               {home.collab.slice(0, 3).map((p) => (
                 <li key={p.id} className="w-[58vw] max-w-72 shrink-0 snap-start lg:w-auto lg:max-w-none">
                   <Link href={`/product/${p.slug}` as Route} className="group block">

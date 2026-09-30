@@ -4,7 +4,8 @@
  *   pnpm db:seed            reset catalogue/content tables and reseed
  *
  * Refuses to run when NODE_ENV=production unless SEED_ALLOW_PRODUCTION=1.
- * Product photos are generated abstract placeholders labelled "Sample photo".
+ * Product photos are generated category illustrations labelled "Sample photo".
+ * SEED_PLACEHOLDERS=0 skips the extra placeholder content (used by E2E).
  */
 import { sql } from "drizzle-orm";
 import sharp from "sharp";
@@ -12,6 +13,7 @@ import { COLOR_SWATCHES, FOOTWEAR_SIZES, type Color } from "../src/domain/catalo
 import { processAndStoreImage } from "../src/server/images/pipeline";
 import * as s from "../src/server/db/schema";
 import { SEED_CATEGORIES, SEED_PRODUCTS, SEED_SIZE_CHART } from "./seed-data";
+import { CATEGORY_ILLUSTRATION, illustrationSvg, type IllustrationKind } from "./lib/illustrations";
 import { connect, scriptStorage } from "./lib/script-db";
 import { ensureAdmin } from "./lib/admin";
 
@@ -28,47 +30,55 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Pastel tint of a swatch colour for placeholder backgrounds. */
-function tint(hex: string, amount: number): string {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return "#f2c9d4";
-  const n = parseInt(m[1]!, 16);
-  const mix = (c: number) => Math.round(c + (255 - c) * amount);
-  const r = mix((n >> 16) & 255);
-  const g = mix((n >> 8) & 255);
-  const b = mix(n & 255);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-}
-
 function swatch(color: Color | undefined): string {
   const v = color ? COLOR_SWATCHES[color] : "#eda3bd";
   return v.startsWith("#") ? v : "#eda3bd";
 }
 
-/** Abstract 4:5 placeholder: an arched "window" in the product's colour. */
-async function placeholderImage(colors: Color[], variant: number): Promise<Buffer> {
+/** Category illustration in the product's colours (4:5, labelled "Sample photo"). */
+async function placeholderImage(colors: Color[], categorySlug: string, variant: number): Promise<Buffer> {
+  const kind = CATEGORY_ILLUSTRATION[categorySlug] ?? "clutch";
   const main = swatch(colors[0]);
-  const second = swatch(colors[1] ?? colors[0]);
-  const bg = tint(main, 0.86);
-  const arch = tint(main, variant === 0 ? 0.35 : 0.55);
-  const accent = tint(second, 0.15);
+  const accent = colors[1] ? swatch(colors[1]) : "#a8123a";
+  return sharp(Buffer.from(illustrationSvg(kind, main, accent, variant)))
+    .jpeg({ quality: 90 })
+    .toBuffer();
+}
+
+/** Square crop of an illustration, used for sample Instagram posts. */
+async function squareImage(colors: Color[], categorySlug: string): Promise<Buffer> {
+  const img = await placeholderImage(colors, categorySlug, 1);
+  return sharp(img).resize(1200, 1200, { fit: "cover", position: "centre" }).jpeg({ quality: 88 }).toBuffer();
+}
+
+/** Editorial sample banner for the homepage hero (4:5), clearly labelled. */
+async function bannerImage(): Promise<Buffer> {
   const W = 1200;
   const H = 1500;
-  const shapes =
-    variant === 0
-      ? `<path d="M300 1260 V620 a300 300 0 0 1 600 0 V1260 Z" fill="${arch}"/>
-         <ellipse cx="600" cy="1265" rx="360" ry="34" fill="${tint(main, 0.7)}"/>
-         <circle cx="600" cy="880" r="120" fill="${accent}"/>`
-      : `<rect x="0" y="0" width="${W}" height="${H}" fill="${tint(main, 0.78)}"/>
-         <circle cx="760" cy="640" r="330" fill="${arch}"/>
-         <path d="M220 1330 V900 a190 190 0 0 1 380 0 V1330 Z" fill="${accent}"/>`;
+  const parts: [string, string, string, number, number, number][] = [
+    ["heel", "#a8123a", "#f2c9d4", 80, 150, 0.62],
+    ["shoulder-bag", "#2a1520", "#a8123a", 470, 520, 0.72],
+    ["phone-case", "#f2c9d4", "#a8123a", 120, 760, 0.6],
+  ];
+  const groups = parts
+    .map(([kind, main, accent, x, y, scale]) => {
+      const svg = illustrationSvg(kind as IllustrationKind, main, accent, 0);
+      const inner = svg.slice(svg.indexOf("<g "), svg.lastIndexOf("</g>") + 4);
+      return `<g transform="translate(${x} ${y}) scale(${scale})">${inner}</g>`;
+    })
+    .join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-    <rect width="${W}" height="${H}" fill="${bg}"/>
-    ${shapes}
-    <text x="${W - 60}" y="${H - 60}" text-anchor="end" font-family="Georgia, serif" font-size="34" fill="${tint(main, 0.2)}" opacity="0.75">Sample photo</text>
+    <rect width="${W}" height="${H}" fill="#f8e4ea"/>
+    <circle cx="880" cy="330" r="260" fill="#f2c9d4"/>
+    <circle cx="260" cy="1180" r="200" fill="#fbf6f7"/>
+    ${groups}
+    <text x="${W - 56}" y="${H - 56}" text-anchor="end" font-family="Georgia, serif" font-size="34" fill="#5c4652">Sample banner</text>
   </svg>`;
   return sharp(Buffer.from(svg)).jpeg({ quality: 90 }).toBuffer();
 }
+
+/** Rich placeholder content (banner, Instagram, extra reviews/orders). Off for E2E. */
+const PLACEHOLDERS = process.env.SEED_PLACEHOLDERS !== "0";
 
 async function main() {
   const { sql: client, db } = connect();
@@ -141,7 +151,11 @@ async function main() {
     }
 
     for (let position = 0; position < 2; position++) {
-      const img = await processAndStoreImage(storage, await placeholderImage(p.colors, position), "products");
+      const img = await processAndStoreImage(
+        storage,
+        await placeholderImage(p.colors, p.category, position),
+        "products",
+      );
       await db.insert(s.productImages).values({
         productId: row!.id,
         position,
@@ -326,6 +340,8 @@ async function main() {
     }
   }
 
+  if (PLACEHOLDERS) await seedPlaceholderContent(db, storage, productIds);
+
   await ensureAdmin(db);
   await client.end();
   console.log("Seed complete.");
@@ -335,3 +351,207 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+
+type SeedDb = ReturnType<typeof connect>["db"];
+type SeedStorage = ReturnType<typeof scriptStorage>;
+
+/**
+ * Placeholder content so the demo store looks complete. Everything is labelled
+ * as sample text/imagery; the owner replaces it in the admin.
+ */
+async function seedPlaceholderContent(db: SeedDb, storage: SeedStorage, productIds: Map<string, string>) {
+  const byName = (name: string) => SEED_PRODUCTS.find((p) => p.name === name)!;
+
+  // Hero banner
+  const banner = await processAndStoreImage(storage, await bannerImage(), "banners");
+  await db
+    .update(s.siteSettings)
+    .set({
+      heroImageKey: banner.storageKey,
+      heroImageWidths: banner.widths,
+      heroImageWidth: banner.width,
+      heroImageHeight: banner.height,
+      heroImageBlurDataUrl: banner.blurDataUrl,
+      heroImageAlt: "Sample banner: cherry heels, a shoulder bag and a phone case",
+      aboutBody: [
+        "USBA Official (@usbaofficial) offers heels, sneakers, flats, bags, wallets, jewellery, phone cases and clothing.",
+        "Sample brand story: every piece is chosen for a playful, feminine wardrobe — cherry-red heels, butterfly bags, charms and soft coquette sets — and our collaboration with @fairycoreforher brings its own fairycore favourites.",
+        "Browse the collection here and order directly on WhatsApp or Instagram. Every order is confirmed personally before it's processed.",
+        "(Sample text — replace in Admin → Settings → About.)",
+      ].join("\n\n"),
+    })
+    .where(sql`id = 1`);
+  const [settings] = await db
+    .select({ faq: s.siteSettings.faq })
+    .from(s.siteSettings)
+    .where(sql`id = 1`);
+  await db
+    .update(s.siteSettings)
+    .set({
+      faq: [
+        ...(settings?.faq ?? []),
+        {
+          question: "How do I pay?",
+          answer:
+            "Sample answer — replace in Admin → Settings: we share payment details on WhatsApp when we confirm your order.",
+        },
+      ],
+    })
+    .where(sql`id = 1`);
+
+  // Instagram posts (sample images linking to the profile)
+  const igProducts = [
+    "Cherry Red Trendy Heels",
+    "Golden Shell Clutch",
+    "Jellyfish Top",
+    "Pink Bow Sneakers",
+    "Cherry Phone Case Set",
+    "Coquette Set",
+  ];
+  for (const [position, name] of igProducts.entries()) {
+    const p = byName(name);
+    const img = await processAndStoreImage(storage, await squareImage(p.colors, p.category), "instagram");
+    await db.insert(s.instagramPosts).values({
+      postUrl: "https://www.instagram.com/usbaofficial/",
+      storageKey: img.storageKey,
+      widths: img.widths,
+      width: img.width,
+      height: img.height,
+      blurDataUrl: img.blurDataUrl,
+      alt: `Sample Instagram post: ${name}`,
+      position,
+    });
+  }
+
+  // More sample reviews, some with photos
+  const moreReviews = [
+    {
+      name: "Sample customer G",
+      product: "Leopard Heels",
+      rating: 5,
+      photo: true,
+      body: "[Sample review] The collab heels are even prettier in person. Wore them to a wedding.",
+    },
+    {
+      name: "Sample customer H",
+      product: "Butterfly Rhinestone Bag",
+      rating: 5,
+      photo: true,
+      body: "[Sample review] Sparkly and the perfect size for an evening out.",
+    },
+    {
+      name: "Sample customer I",
+      product: "Powerpuff Phone Case",
+      rating: 4,
+      photo: false,
+      body: "[Sample review] Fits well and the print is so cute.",
+    },
+    {
+      name: "Sample customer J",
+      product: "Coquette Set",
+      rating: 5,
+      photo: true,
+      body: "[Sample review] Soft fabric, ordered my usual size and it fit.",
+    },
+    {
+      name: "Sample customer K",
+      product: "Mary Jane Flats",
+      rating: 4,
+      photo: false,
+      body: "[Sample review] Comfortable for daily wear; ask for sizing help if you're unsure.",
+    },
+    {
+      name: "Sample customer L",
+      product: null,
+      rating: null,
+      photo: false,
+      body: "[Sample review] Quick replies on WhatsApp and the order was confirmed the same day.",
+    },
+  ];
+  for (const [i, r] of moreReviews.entries()) {
+    const p = r.product ? byName(r.product) : null;
+    const photo =
+      r.photo && p
+        ? await processAndStoreImage(storage, await placeholderImage(p.colors, p.category, 1), "reviews")
+        : null;
+    await db.insert(s.reviews).values({
+      customerName: r.name,
+      body: r.body,
+      rating: r.rating,
+      productId: r.product ? (productIds.get(r.product) ?? null) : null,
+      photoKey: photo?.storageKey ?? null,
+      photoWidths: photo?.widths ?? null,
+      photoWidth: photo?.width ?? null,
+      photoHeight: photo?.height ?? null,
+      photoBlurDataUrl: photo?.blurDataUrl ?? null,
+      status: "approved",
+      source: "admin",
+      createdAt: new Date(Date.now() - (i + 1) * 3 * 86_400_000),
+      moderatedAt: new Date(),
+    });
+  }
+
+  // More sample orders across statuses and dates
+  const statuses = [
+    "received",
+    "processing",
+    "shipped",
+    "delivered",
+    "delivered",
+    "cancelled",
+    "delivered",
+    "shipped",
+  ] as const;
+  const flow = ["received", "processing", "shipped", "delivered"];
+  const orderProducts = [
+    "Silver Butterfly Heels",
+    "Cherry Kiss Wallet",
+    "Pink Fur Jacket",
+    "Gold Serpentine Watch",
+    "Pink Bow Sneakers",
+    "Red Structured Bag",
+    "Pearl Drop Necklace",
+    "Coquette Set",
+  ];
+  for (const [i, name] of orderProducts.entries()) {
+    const p = byName(name);
+    const status = statuses[i]!;
+    const createdAt = new Date(Date.now() - (i + 2) * 2 * 86_400_000);
+    const [order] = await db
+      .insert(s.orders)
+      .values({
+        customerName: `Sample order customer ${i + 4}`,
+        customerPhone: `0300 00000${String(i + 10).padStart(2, "0")}`,
+        channel: i % 3 === 0 ? "instagram" : "whatsapp",
+        status,
+        notes: "Sample order (development data)",
+        createdAt,
+        updatedAt: createdAt,
+      })
+      .returning({ id: s.orders.id });
+    const [prod] = await db
+      .select({ code: s.products.code })
+      .from(s.products)
+      .where(sql`id = ${productIds.get(name)!}`);
+    await db.insert(s.orderItems).values({
+      orderId: order!.id,
+      productId: productIds.get(name)!,
+      productName: name,
+      productCode: prod!.code,
+      size: p.category === "heels" || p.category === "sneakers" || p.category === "flats" ? "38" : null,
+      quantity: 1,
+      unitPricePkr: p.sale ?? p.price,
+    });
+    const path = status === "cancelled" ? ["received", "cancelled"] : flow.slice(0, flow.indexOf(status) + 1);
+    let from: string | null = null;
+    for (const st of path) {
+      await db
+        .insert(s.orderStatusEvents)
+        .values({ orderId: order!.id, fromStatus: from, toStatus: st, createdAt });
+      from = st;
+    }
+  }
+  console.log(
+    "Placeholder content: banner, 6 Instagram posts, 6 reviews, 8 orders, payment FAQ, brand story.",
+  );
+}

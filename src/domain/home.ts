@@ -40,10 +40,16 @@ export function buildHomeSections(catalog: Catalog): HomeSections {
   const available = all.filter((p) => p.stockStatus !== "out_of_stock");
 
   // Featured = admin-picked (AS-18); falls back to newest when none are picked.
-  const picked = all.filter((p) => p.featuredRank !== null);
-  const featured = (
-    picked.length ? sortProducts(picked, "featured") : sortProducts(available, "newest")
-  ).slice(0, 8);
+  // Featured = admin-picked (AS-18) in rank order, topped up with the newest
+  // products so the grid always fills whole rows of 4 (up to 8).
+  const picked = sortProducts(
+    all.filter((p) => p.featuredRank !== null),
+    "featured",
+  );
+  const pickedIds = new Set(picked.map((p) => p.id));
+  const fill = sortProducts(available, "newest").filter((p) => !pickedIds.has(p.id));
+  const target = Math.min(8, Math.max(4, Math.ceil(picked.length / 4) * 4));
+  const featured = [...picked, ...fill].slice(0, target);
 
   const newArrivals = sortProducts(available, "newest").slice(0, 10);
   const trending = sortProducts(

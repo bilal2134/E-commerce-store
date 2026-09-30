@@ -13,6 +13,8 @@ if (!dbName.endsWith("_test")) {
 }
 
 for (const script of ["db:migrate", "db:seed"]) {
-  const result = spawnSync("pnpm", [script], { stdio: "inherit", shell: true, env: process.env });
+  // E2E asserts on a minimal, deterministic seed (no banner, payment FAQ or extra placeholders).
+  const env = { ...process.env, SEED_PLACEHOLDERS: "0" };
+  const result = spawnSync("pnpm", [script], { stdio: "inherit", shell: true, env });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
