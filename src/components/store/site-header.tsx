@@ -3,7 +3,7 @@ import Link from "next/link";
 import { buildInstagramProfileUrl } from "@/domain/ordering";
 import { INFO_LINKS, primaryNav } from "@/lib/navigation";
 import { getCatalog, getSettings } from "@/server/catalog/public";
-import { InstagramIcon } from "@/components/ui/icons";
+import { HeartIcon, InstagramIcon } from "@/components/ui/icons";
 import { DesktopNav } from "./desktop-nav";
 import { MobileNav, type MobileNavGroup } from "./mobile-nav";
 import { SearchDialog } from "./search/search-dialog";
@@ -67,6 +67,19 @@ export async function SiteHeader() {
           </div>
           <div className="flex flex-1 items-center justify-end gap-1 lg:flex-none">
             <SearchDialog quickLinks={links.map((l) => ({ href: l.href, label: l.label }))} />
+            <Link
+              href="/saved"
+              data-saved-link
+              aria-label="Saved items"
+              className="relative inline-flex size-11 items-center justify-center rounded-sm text-ink hover:bg-blush"
+            >
+              <HeartIcon />
+              <span
+                data-saved-count
+                hidden
+                className="absolute end-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full bg-cherry px-1 text-2xs leading-4 font-semibold text-white"
+              />
+            </Link>
             {instagramUrl ? (
               <a
                 href={instagramUrl}

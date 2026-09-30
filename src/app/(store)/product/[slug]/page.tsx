@@ -23,6 +23,7 @@ import { JsonLd } from "@/components/store/json-ld";
 import { Price } from "@/components/store/price";
 import { OrderPanel } from "@/components/store/product/order-panel";
 import { ProductGallery } from "@/components/store/product/product-gallery";
+import { SaveButton } from "@/components/store/saved/save-button";
 import { ProductRail, Section, SectionHeader } from "@/components/store/sections";
 
 const PRODUCT_CODE_RE = /^usba-\d+$/i;
@@ -136,6 +137,8 @@ export default async function ProductPage({ params }: PageProps<"/product/[slug]
               >
                 {STOCK_STATUS_LABELS[product.stockStatus]}
               </p>
+
+              <SaveButton slug={product.slug} name={product.name} variant="page" className="mt-4" />
 
               <OrderPanel
                 product={{
