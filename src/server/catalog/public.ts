@@ -2,6 +2,8 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { Catalog } from "@/domain/category";
 import type { ProductDetail } from "@/domain/product";
+import type { Locale } from "@/i18n/config";
+import { getLocale } from "@/i18n/server";
 import { CACHE_TAGS } from "../cache";
 import { db } from "../db/client";
 import { mediaBaseUrl } from "../storage";
@@ -59,11 +61,16 @@ export async function getProductSlugs(): Promise<{ slug: string; updatedAt: stri
   return fetchVisibleProductSlugs(ctx());
 }
 
-export async function getSettings(): Promise<PublicSettings> {
+export async function getSettings(locale: Locale = "en"): Promise<PublicSettings> {
   "use cache";
   cacheLife("storefront");
   cacheTag(CACHE_TAGS.settings);
-  return toPublicSettings(ctx(), await fetchSettingsRow(db()));
+  return toPublicSettings(ctx(), await fetchSettingsRow(db()), locale);
+}
+
+/** Settings in the current page's locale (storefront Server Components). */
+export async function getLocalizedSettings(): Promise<PublicSettings> {
+  return getSettings(await getLocale());
 }
 
 export async function getApprovedReviews(): Promise<PublicReview[]> {

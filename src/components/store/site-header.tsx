@@ -4,7 +4,7 @@ import { buildInstagramProfileUrl } from "@/domain/ordering";
 import { localePath, localizeHref } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
 import { infoLinks, primaryNav } from "@/lib/navigation";
-import { getCatalog, getSettings } from "@/server/catalog/public";
+import { getCatalog, getLocalizedSettings } from "@/server/catalog/public";
 import { HeartIcon, InstagramIcon } from "@/components/ui/icons";
 import { DesktopNav } from "./desktop-nav";
 import { LanguageSwitch } from "./language-switch";
@@ -25,7 +25,7 @@ export function Wordmark({ className }: { className?: string }) {
 export async function SiteHeader() {
   const [{ categories }, settings, { locale, t }] = await Promise.all([
     getCatalog(),
-    getSettings(),
+    getLocalizedSettings(),
     getI18n(),
   ]);
   const at = (path: string) => localePath(locale, path) as Route;

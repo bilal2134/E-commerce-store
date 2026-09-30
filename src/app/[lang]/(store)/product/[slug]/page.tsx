@@ -15,7 +15,7 @@ import {
   getCatalog,
   getProduct,
   getProductSlugs,
-  getSettings,
+  getLocalizedSettings,
   getSlugForCode,
 } from "@/server/catalog/public";
 import { RulerIcon, TruckIcon } from "@/components/ui/icons";
@@ -74,7 +74,7 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/product
     notFound();
   }
 
-  const [settings, catalog] = await Promise.all([getSettings(), getCatalog()]);
+  const [settings, catalog] = await Promise.all([getLocalizedSettings(), getCatalog()]);
   const siteUrl = env().SITE_URL;
   const productUrl = `${siteUrl}/product/${product.slug}`;
   const crumbs: Crumb[] = localizeCrumbs(

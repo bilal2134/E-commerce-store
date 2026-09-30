@@ -1,9 +1,10 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { normalizeInstagramHandle, normalizeWhatsappNumber } from "@/domain/ordering";
+import type { LocalizedSettingsInput } from "@/domain/validation/localized-settings";
 import type { SettingsInput } from "@/domain/validation/settings";
 import type { Database } from "../db/client";
-import { siteSettings } from "../db/schema";
+import { siteSettings, type FaqItem, type LocalizedSettingsText } from "../db/schema";
 import { imageObjectKeys, processAndStoreImage, type ProcessedImage } from "../images/pipeline";
 import type { ObjectStorage } from "../storage/types";
 
@@ -87,4 +88,31 @@ export async function updateSettings(
       .deleteMany(imageObjectKeys(current.heroImageKey, current.heroImageWidths ?? []))
       .catch((err) => console.error("Failed to delete old hero image (orphan remains)", err));
   }
+}
+
+/**
+ * Save the Urdu versions of owner text. Empty strings are dropped so the
+ * storefront falls back to English. FAQ entries are stored position-for-
+ * position against the English FAQ; untranslated positions reuse English.
+ */
+export async function updateUrduSettings(
+  database: Database,
+  input: LocalizedSettingsInput,
+  englishFaq: readonly FaqItem[],
+): Promise<void> {
+  const { faq, ...fields } = input;
+  const ur: LocalizedSettingsText = Object.fromEntries(
+    Object.entries(fields).filter(([, v]) => typeof v === "string" && v.trim() !== ""),
+  );
+  const anyFaq = faq.some((f) => f.question && f.answer);
+  if (anyFaq) {
+    ur.faq = englishFaq.map((en, i) =>
+      faq[i]?.question && faq[i]?.answer ? { question: faq[i]!.question, answer: faq[i]!.answer } : en,
+    );
+  }
+  const row = await getSettingsRow(database);
+  await database
+    .update(siteSettings)
+    .set({ localized: { ...row.localized, ur } })
+    .where(eq(siteSettings.id, 1));
 }

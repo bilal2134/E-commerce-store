@@ -1,7 +1,7 @@
 import type { Metadata, Route } from "next";
 import { localePath, pageAlternates } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
-import { getSettings } from "@/server/catalog/public";
+import { getLocalizedSettings } from "@/server/catalog/public";
 import { ButtonLink } from "@/components/ui/button";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** CS-13: footwear size chart. */
 export default async function SizeGuidePage() {
-  const [settings, { locale, t }] = await Promise.all([getSettings(), getI18n()]);
+  const [settings, { locale, t }] = await Promise.all([getLocalizedSettings(), getI18n()]);
   return (
     <div className="container-page pt-6 md:pt-10">
       <div className="max-w-3xl">

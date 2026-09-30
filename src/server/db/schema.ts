@@ -281,6 +281,23 @@ export interface FaqItem {
   answer: string;
 }
 
+/** Optional per-locale overrides of owner-entered text (CS-15). Empty = use the default (English). */
+export interface LocalizedSettingsText {
+  announcementText?: string;
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroCtaLabel?: string;
+  collabTitle?: string;
+  collabBody?: string;
+  deliverySummary?: string;
+  deliveryDetails?: string;
+  preorderNote?: string;
+  aboutBody?: string;
+  sizeGuideNote?: string;
+  faq?: FaqItem[];
+}
+
 export interface SizeChartRow {
   eu: string;
   uk: string;
@@ -328,6 +345,11 @@ export const siteSettings = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     sizeGuideNote: text("size_guide_note").notNull().default(""),
+    /** { ur: LocalizedSettingsText } — optional translations of the fields above. */
+    localized: jsonb("localized")
+      .$type<Partial<Record<"ur", LocalizedSettingsText>>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
 
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

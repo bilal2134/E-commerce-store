@@ -161,8 +161,12 @@ export const ur: Dictionary = {
     },
   },
   product: {
-    withPartner: (handle: string) => `⁦@${handle}⁩ کے ساتھ`,
-    collabPiece: (handle: string) => ({ before: "USBA ×", handle: `⁦@${handle}⁩`, after: "کولیب پیس" }),
+    withPartner: (handle: string) => `\u2066@${handle}\u2069 کے ساتھ`,
+    collabPiece: (handle: string) => ({
+      before: "USBA ×",
+      handle: `\u2066@${handle}\u2069`,
+      after: "کولیب پیس",
+    }),
     sizeEu: "سائز (EU)",
     chooseSize: "آگے بڑھنے کے لیے اپنا سائز چنیں۔",
     soldOut: "(ختم)",
@@ -258,7 +262,7 @@ export const ur: Dictionary = {
       "کسی پروڈکٹ، سائز یا آرڈر کے بارے میں سوال ہے؟ ہمیں براہ راست پیغام بھیجیں۔ ہم واٹس ایپ اور انسٹاگرام پر جواب دیتے ہیں۔",
     whatsapp: "واٹس ایپ پر پیغام بھیجیں",
     dm: "انسٹاگرام پر ڈی ایم بھیجیں",
-    viewProfile: (handle: string) => `انسٹاگرام پر ⁦@${handle}⁩ دیکھیں`,
+    viewProfile: (handle: string) => `انسٹاگرام پر \u2066@${handle}\u2069 دیکھیں`,
     sizeGuide: "جوتوں کی سائز گائیڈ",
     faq: "اکثر پوچھے جانے والے سوالات",
     faqEmpty: "کوئی بھی سوال ہو تو پیغام بھیجیں، ہم جواب دیں گے۔",

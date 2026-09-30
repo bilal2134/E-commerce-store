@@ -324,20 +324,31 @@ export async function fetchSettingsRow(database: Database): Promise<SettingsRow>
   return row;
 }
 
-export function toPublicSettings(ctx: Pick<QueryContext, "mediaUrl">, row: SettingsRow): PublicSettings {
+/**
+ * Public settings for a locale. Urdu overrides (settings.localized.ur) replace
+ * the default text only when filled in; anything left empty falls back.
+ */
+export function toPublicSettings(
+  ctx: Pick<QueryContext, "mediaUrl">,
+  row: SettingsRow,
+  locale: "en" | "ur" = "en",
+): PublicSettings {
+  const tr = locale === "en" ? {} : (row.localized?.[locale] ?? {});
+  const pick = (base: string, override: string | undefined) => (override?.trim() ? override.trim() : base);
+  const announcementText = pick(row.announcementText, tr.announcementText);
   return {
     whatsappNumber: row.whatsappNumber || null,
     instagramHandle: row.instagramHandle || null,
     collabInstagramHandle: row.collabInstagramHandle || null,
     announcement:
-      row.announcementEnabled && row.announcementText.trim()
-        ? { text: row.announcementText.trim(), href: row.announcementHref || null }
+      row.announcementEnabled && announcementText.trim()
+        ? { text: announcementText.trim(), href: row.announcementHref || null }
         : null,
     hero: {
-      eyebrow: row.heroEyebrow,
-      title: row.heroTitle,
-      subtitle: row.heroSubtitle,
-      ctaLabel: row.heroCtaLabel,
+      eyebrow: pick(row.heroEyebrow, tr.heroEyebrow),
+      title: pick(row.heroTitle, tr.heroTitle),
+      subtitle: pick(row.heroSubtitle, tr.heroSubtitle),
+      ctaLabel: pick(row.heroCtaLabel, tr.heroCtaLabel),
       ctaHref: row.heroCtaHref,
       image:
         row.heroImageKey && row.heroImageWidths && row.heroImageWidth && row.heroImageHeight
@@ -355,14 +366,14 @@ export function toPublicSettings(ctx: Pick<QueryContext, "mediaUrl">, row: Setti
             )
           : null,
     },
-    collab: { title: row.collabTitle, body: row.collabBody },
-    deliverySummary: row.deliverySummary,
-    deliveryDetails: row.deliveryDetails,
-    preorderNote: row.preorderNote,
-    aboutBody: row.aboutBody,
-    faq: row.faq,
+    collab: { title: pick(row.collabTitle, tr.collabTitle), body: pick(row.collabBody, tr.collabBody) },
+    deliverySummary: pick(row.deliverySummary, tr.deliverySummary),
+    deliveryDetails: pick(row.deliveryDetails, tr.deliveryDetails),
+    preorderNote: pick(row.preorderNote, tr.preorderNote),
+    aboutBody: pick(row.aboutBody, tr.aboutBody),
+    faq: tr.faq?.length ? tr.faq : row.faq,
     sizeChart: row.sizeChart,
-    sizeGuideNote: row.sizeGuideNote,
+    sizeGuideNote: pick(row.sizeGuideNote, tr.sizeGuideNote),
     updatedAt: row.updatedAt.toISOString(),
   };
 }

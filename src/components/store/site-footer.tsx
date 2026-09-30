@@ -4,7 +4,7 @@ import { buildInstagramProfileUrl, buildWhatsappUrl, buildEnquiryMessage } from 
 import { localePath } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
 import { infoLinks } from "@/lib/navigation";
-import { getCatalog, getSettings } from "@/server/catalog/public";
+import { getCatalog, getLocalizedSettings } from "@/server/catalog/public";
 import { InstagramIcon, TruckIcon, WhatsappIcon } from "@/components/ui/icons";
 import { LanguageSwitch } from "./language-switch";
 import { Wordmark } from "./site-header";
@@ -12,7 +12,7 @@ import { Wordmark } from "./site-header";
 export async function SiteFooter() {
   const [{ categories }, settings, { locale, t }] = await Promise.all([
     getCatalog(),
-    getSettings(),
+    getLocalizedSettings(),
     getI18n(),
   ]);
   const at = (path: string) => localePath(locale, path) as Route;

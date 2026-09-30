@@ -2,7 +2,12 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { buildHomeSections } from "@/domain/home";
 import { env } from "@/server/config/env";
-import { getApprovedReviews, getCatalog, getInstagramPosts, getSettings } from "@/server/catalog/public";
+import {
+  getApprovedReviews,
+  getCatalog,
+  getInstagramPosts,
+  getLocalizedSettings,
+} from "@/server/catalog/public";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 import { ButtonLink } from "@/components/ui/button";
 import { ClockIcon, InstagramIcon, RulerIcon, WhatsappIcon } from "@/components/ui/icons";
@@ -34,7 +39,7 @@ const SHORTCUT_KEYS = {
 export default async function HomePage() {
   const [catalog, settings, reviews, instagram, { locale, t }] = await Promise.all([
     getCatalog(),
-    getSettings(),
+    getLocalizedSettings(),
     getApprovedReviews(),
     getInstagramPosts(),
     getI18n(),

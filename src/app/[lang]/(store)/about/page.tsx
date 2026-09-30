@@ -1,7 +1,7 @@
 import type { Metadata, Route } from "next";
 import { localePath, pageAlternates } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
-import { getSettings } from "@/server/catalog/public";
+import { getLocalizedSettings } from "@/server/catalog/public";
 import { ButtonLink } from "@/components/ui/button";
 import { TruckIcon } from "@/components/ui/icons";
 
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AboutPage() {
-  const [settings, { locale, t }] = await Promise.all([getSettings(), getI18n()]);
+  const [settings, { locale, t }] = await Promise.all([getLocalizedSettings(), getI18n()]);
   const paragraphs = settings.aboutBody
     .split(/\n{2,}/)
     .map((p) => p.trim())

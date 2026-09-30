@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { localePath } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
-import { getSettings } from "@/server/catalog/public";
+import { getLocalizedSettings } from "@/server/catalog/public";
 import { SavedView } from "@/components/store/saved/saved-view";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Saved list (CS-21): lives in this browser; shareable by link. Rendered client-side. */
 export default async function SavedPage() {
-  const [settings, { locale, t }] = await Promise.all([getSettings(), getI18n()]);
+  const [settings, { locale, t }] = await Promise.all([getLocalizedSettings(), getI18n()]);
   return (
     <div className="container-page pt-6 pb-4 md:pt-10">
       <h1 className="type-display text-[2.5rem] leading-none md:text-6xl">{t.saved.title}</h1>

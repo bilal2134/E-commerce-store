@@ -9,7 +9,7 @@ import {
   buildWhatsappUrl,
   isValidWhatsappNumber,
 } from "@/domain/ordering";
-import { getSettings } from "@/server/catalog/public";
+import { getLocalizedSettings } from "@/server/catalog/public";
 import { buttonClasses } from "@/components/ui/button";
 import { ChevronDownIcon, InstagramIcon, RulerIcon, TruckIcon, WhatsappIcon } from "@/components/ui/icons";
 
@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** CS-19, CS-11, Flow C-6. */
 export default async function ContactPage() {
-  const [settings, { locale, t }] = await Promise.all([getSettings(), getI18n()]);
+  const [settings, { locale, t }] = await Promise.all([getLocalizedSettings(), getI18n()]);
   const whatsapp =
     settings.whatsappNumber && isValidWhatsappNumber(settings.whatsappNumber)
       ? buildWhatsappUrl(settings.whatsappNumber, buildEnquiryMessage())

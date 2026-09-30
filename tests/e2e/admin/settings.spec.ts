@@ -32,9 +32,9 @@ test.describe.serial("admin settings", () => {
     await page.getByLabel("Image description (alt text)").fill("Pink abstract banner");
 
     await page.getByRole("button", { name: "Add question" }).click();
-    await page.getByRole("textbox", { name: "Question 5" }).fill("How can I pay?");
+    await page.getByRole("textbox", { name: "Question 5", exact: true }).fill("How can I pay?");
     await page
-      .getByRole("textbox", { name: "Answer 5" })
+      .getByRole("textbox", { name: "Answer 5", exact: true })
       .fill("Pay on delivery or by bank transfer once we confirm your order.");
     await page.getByRole("button", { name: "Move question 5 up" }).click();
 
@@ -52,7 +52,9 @@ test.describe.serial("admin settings", () => {
     await page.reload();
     await expect(page.getByLabel("Title", { exact: true }).first()).toHaveValue("Spring edit");
     await expect(page.getByRole("img", { name: "Current banner" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Question 4" })).toHaveValue("How can I pay?");
+    await expect(page.getByRole("textbox", { name: "Question 4", exact: true })).toHaveValue(
+      "How can I pay?",
+    );
 
     await page.goto("/admin/dashboard");
     await expect(page.getByText("Add a homepage banner image (done)")).toBeVisible();
@@ -91,6 +93,25 @@ test.describe.serial("admin settings", () => {
       await page.locator("#deliverySummary").fill("Delivery in 18–20 days");
       await page.getByLabel("WhatsApp number").fill("0300 1234567");
       await save();
+    }
+  });
+  test("Urdu text shows on /ur and English stays unchanged (CS-15)", async ({ page }) => {
+    await page.goto("/admin/settings");
+    const form = page.getByRole("form", { name: "Urdu text" });
+    await form.locator("#ur-heroTitle").fill("نیا کلیکشن");
+    await form.getByRole("button", { name: "Save Urdu text" }).click();
+    await expect(form.getByRole("status").filter({ hasText: "Urdu text saved" })).toBeVisible();
+    try {
+      await page.goto("/ur");
+      await expect(page.getByRole("heading", { level: 1, name: "نیا کلیکشن" })).toBeVisible();
+      await page.goto("/");
+      await expect(page.getByRole("heading", { level: 1, name: "نیا کلیکشن" })).toHaveCount(0);
+    } finally {
+      await page.goto("/admin/settings");
+      const f = page.getByRole("form", { name: "Urdu text" });
+      await f.locator("#ur-heroTitle").fill("");
+      await f.getByRole("button", { name: "Save Urdu text" }).click();
+      await expect(f.getByRole("status").filter({ hasText: "Urdu text saved" })).toBeVisible();
     }
   });
 });

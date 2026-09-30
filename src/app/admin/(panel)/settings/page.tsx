@@ -5,6 +5,8 @@ import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/server/db/client";
 import { mediumUrl } from "../../_lib/media";
 import { SettingsForm } from "./_components/settings-form";
+import { UrduSettingsForm } from "./_components/urdu-settings-form";
+import { LOCALIZED_TEXT_FIELDS } from "@/domain/validation/localized-settings";
 
 export const metadata: Metadata = { title: "Settings" };
 export const instant = false;
@@ -48,6 +50,17 @@ export default async function SettingsPage() {
           faq: s.faq,
           sizeChart: s.sizeChart,
         }}
+      />
+      <UrduSettingsForm
+        english={
+          Object.fromEntries(LOCALIZED_TEXT_FIELDS.map((f) => [f, s[f]])) as Record<
+            (typeof LOCALIZED_TEXT_FIELDS)[number],
+            string
+          >
+        }
+        urdu={s.localized.ur ?? {}}
+        englishFaq={s.faq}
+        urduFaq={s.localized.ur?.faq ?? []}
       />
     </>
   );
