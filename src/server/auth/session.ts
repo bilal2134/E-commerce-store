@@ -116,6 +116,29 @@ export async function destroyCurrentSession(): Promise<void> {
   jar.delete(sessionCookieName());
 }
 
+/** Stored id (SHA-256) of the session making this request, or null. */
+export async function currentSessionId(): Promise<string | null> {
+  const token = (await cookies()).get(sessionCookieName())?.value;
+  return token ? hashToken(token) : null;
+}
+
+/** Revoke every session for this admin except `keepSessionId`. Returns how many were removed. */
+export async function revokeOtherSessions(
+  database: Database,
+  adminId: string,
+  keepSessionId: string | null,
+): Promise<number> {
+  const rows = await database
+    .delete(adminSessions)
+    .where(
+      keepSessionId
+        ? and(eq(adminSessions.adminId, adminId), sql`${adminSessions.id} <> ${keepSessionId}`)
+        : eq(adminSessions.adminId, adminId),
+    )
+    .returning({ id: adminSessions.id });
+  return rows.length;
+}
+
 /** Housekeeping for expired/idle sessions. */
 export async function pruneSessions(database: Database): Promise<void> {
   const idleCutoff = new Date(Date.now() - SESSION_IDLE_TTL_MS);
