@@ -61,6 +61,10 @@ const nextConfig: NextConfig = {
     storefront: { stale: 300, revalidate: 900, expire: 86400 },
   },
   experimental: {
+    // The persisted dev cache (.next/dev/cache/turbopack) went stale here more
+    // than once after interrupted dev servers, 404ing every storefront route
+    // until deleted. A few seconds of cold start is the cheaper trade.
+    turbopackFileSystemCacheForDev: false,
     // Fallback 404 for URLs outside both root layouts ([lang] storefront, /admin).
     globalNotFound: true,
     // Tailwind output is small (~12 KB raw); inlining removes a render-blocking request.

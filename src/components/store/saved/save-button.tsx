@@ -30,6 +30,8 @@ export async function SaveButton({
         data-save-slug={slug}
         data-save-name={name}
         aria-pressed="false"
+        // SavedProvider may set aria-pressed from localStorage before this hydrates.
+        suppressHydrationWarning
         aria-label={t.product.save(name)}
         className={cn(
           "group/save absolute end-0 top-0 z-10 flex size-11 items-center justify-center text-ink",
@@ -49,6 +51,8 @@ export async function SaveButton({
       data-save-slug={slug}
       data-save-name={name}
       aria-pressed="false"
+      // SavedProvider may set aria-pressed from localStorage before this hydrates.
+      suppressHydrationWarning
       className={cn(
         "group/save inline-flex h-11 items-center gap-2 rounded-sm border border-control bg-surface px-4 text-sm font-medium text-ink hover:border-ink",
         HEART_FILL,
