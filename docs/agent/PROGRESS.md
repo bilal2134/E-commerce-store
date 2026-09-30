@@ -1,10 +1,10 @@
 # Progress
 
-_Last updated: 2026-09-30 (end of autonomous run 1)._
+_Last updated: 2026-09-30 (run 2: Phase 2 features, placeholder content, upgrades)._
 
 ## State
 
-Phase 1 (MVP) and Phase 1.5 stories are implemented and verified; Phase 2 (Urdu, wishlist, analytics dashboard, checkout) is deferred by design. See `docs/requirements-traceability.md` (statuses verified by an independent audit).
+Phase 1, Phase 1.5 and Phase 2 stories (Urdu CS-15, wishlist CS-21, analytics AS-19) are implemented and verified. Only full checkout/payment remains (needs a payment provider and credentials). See `docs/requirements-traceability.md` (statuses verified by an independent audit).
 
 | Area                                                                                                      | State                                      | Evidence                                               |
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
@@ -26,7 +26,9 @@ Phase 1 (MVP) and Phase 1.5 stories are implemented and verified; Phase 2 (Urdu,
 
 ## Next actions
 
-- Upgrade `next` to 16.3.8 as soon as it is on npm; re-run the full suite.
+- Upgrade `next` to 16.3.8 as soon as it is on npm (React is already 19.3.0); re-run the full suite.
+- Native-speaker review of `src/i18n/dictionaries/ur.ts`.
 - Owner inputs in BLOCKERS (WhatsApp number, payment FAQ, brand story, real catalogue/photos, hosting accounts).
 - First deployment (docs/deployment/current.md) once accounts exist; then Lighthouse + field Web Vitals on the real domain.
-- Phase 2: Urdu locale (ADR-0012), wishlist (CS-21), analytics dashboard (AS-19), checkout (ADR-0011).
+- Checkout/payments (ADR-0011) once a provider (e.g. JazzCash/Easypaisa/Stripe) and credentials are chosen.
+- Optional: Urdu versions of owner content (hero/FAQ/about) via settings fields.

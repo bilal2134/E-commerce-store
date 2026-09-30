@@ -1,6 +1,6 @@
 # USBA Official
 
-Fashion e-commerce storefront for USBA Official (Pakistan): browse footwear, bags, accessories and clothing, then order through WhatsApp or Instagram DM with a pre-filled message. A single-owner admin panel manages products, images, orders, reviews and site settings. Checkout and payments are a later phase.
+Fashion e-commerce storefront for USBA Official (Pakistan): browse footwear, bags, accessories and clothing, then order through WhatsApp or Instagram DM with a pre-filled message. The store is available in English and Urdu (`/ur`, right-to-left), with saved lists, live search and URL-shareable filters. A single-owner admin panel manages products, images, categories, featured order, orders, reviews, Instagram posts, site settings, the owner account and privacy-friendly visitor insights. Checkout and payments are a later phase.
 
 ## Stack
 
@@ -26,7 +26,7 @@ pnpm admin:create           # creates the admin from ADMIN_EMAIL / ADMIN_PASSWOR
 pnpm dev
 ```
 
-Open http://localhost:3000 for the store and http://localhost:3000/admin for the admin panel. `pnpm setup` seeds demo products with a placeholder WhatsApp number; set the real one in Admin -> Settings.
+Open http://localhost:3000 for the store (http://localhost:3000/ur for Urdu) and http://localhost:3000/admin for the admin panel. `pnpm setup` seeds clearly labelled sample content (illustrated sample products, banner, Instagram posts, reviews, orders) and a placeholder WhatsApp number; replace all of it in the admin before launch. `SEED_PLACEHOLDERS=0 pnpm db:seed` seeds the minimal set used by E2E tests.
 
 ## Commands
 
@@ -47,13 +47,15 @@ Open http://localhost:3000 for the store and http://localhost:3000/admin for the
 | `pnpm db:seed`                 | Seed demo categories, products, settings                             |
 | `pnpm admin:create`            | Create the admin user                                                |
 | `pnpm infra:up` / `infra:down` | Start/stop local Postgres and RustFS                                 |
+| `pnpm storage:cleanup`         | Report (or `-- --delete`) image objects no database row references   |
 
 ## Project structure
 
 ```
-src/domain/          pure logic: catalog, categories, listing filters, search, ordering, orders
+src/domain/          pure logic: catalog, categories, listing filters, search, ordering, orders, saved lists
+src/i18n/            locales (en, ur), typed dictionaries, locale helpers
 src/server/          server-only: config, db, auth, storage, images, catalog, admin, logger
-src/app/             routes (storefront, /admin, /api)
+src/app/             routes: [lang]/(store) storefront, /admin, /api (src/proxy.ts maps / → /en)
 src/components/      ui, store, admin components
 scripts/             migrate, seed, setup-storage, create-admin
 drizzle/             SQL migrations

@@ -16,6 +16,8 @@ Lighthouse 13.5 mobile preset (Moto G Power emulation, **simulated slow 4G: 1.6 
 
 **Final re-measurement after all audit fixes (same method, 2026-09-30):** home 93 / listing 93 / product 93 performance, accessibility 100, best practices 100, SEO 100 on all three; LCP 3.2 s (simulated slow 4G), TBT 50–60 ms, CLS 0. Repeated home runs ranged 76–93: the low run was a TBT spike (580 ms) from load on the shared development machine, not a code change; judge with field data after launch.
 
+**Urdu pages (/ur, after i18n):** home 89, product 90, listing 87 (LCP 3.3–4.0 s, CLS 0). A 230 KB Nastaliq web font initially pushed Urdu LCP to 4.4 s and caused layout shift (CLS 0.25) on swap; Urdu now uses system Nastaliq/Naskh fonts. English pages re-measured after the locale rewrite: 91–92; the proxy adds no measurable TTFB once warm (10–18 ms locally).
+
 First measurement before optimisation: home 72 (LCP 4.4 s, TBT 520 ms). Changes that moved it: inlined CSS (removes the render-blocking stylesheet), preconnect to the media origin, blur placeholders only for eager images, hover images only on listing grids, fewer homepage cards, display font not preloaded (no longer competes with the LCP image), 26 KB `favicon.ico` replaced by a 0.3 KB SVG.
 
 Interpretation: "slow 4G" in Lighthouse is harsher than typical Pakistani 4G. LCP there is ~3.1 s; on a regular 4G link (≈9 Mbps / 70 ms) the same waterfall finishes well under 2 s. Field data (CrUX / RUM) must confirm after launch.

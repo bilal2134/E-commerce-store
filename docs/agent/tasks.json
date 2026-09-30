@@ -127,15 +127,15 @@
     "id": "T-012",
     "title": "Phase 2: Urdu (CS-15), wishlist (CS-21), analytics dashboard (AS-19), checkout and payments",
     "phase": "2",
-    "status": "todo",
+    "status": "in_progress",
     "dependsOn": ["T-008"],
     "files": [
       "docs/architecture/decisions/0011-whatsapp-ordering-and-future-checkout.md",
       "docs/architecture/decisions/0012-localization-strategy.md",
       "docs/architecture/decisions/0013-analytics-seam.md"
     ],
-    "verification": "Per ADRs",
-    "remaining": "All; requires owner decisions on payment providers"
+    "verification": "e2e i18n, saved, insights specs green",
+    "remaining": "Checkout + payment gateway (blocked on provider choice/credentials). Urdu, wishlist and analytics done."
   },
   {
     "id": "T-013",
@@ -145,6 +145,21 @@
     "dependsOn": ["T-002", "T-008"],
     "files": [],
     "verification": "docs/performance.md: Lighthouse mobile 92-93, LCP 3.1-3.2 s simulated slow 4G, CLS 0",
+    "remaining": ""
+  },
+  {
+    "id": "T-014",
+    "title": "Placeholder content, React 19.3 upgrade, category admin, account page",
+    "phase": "2",
+    "status": "done",
+    "dependsOn": [],
+    "files": [
+      "scripts/seed.ts",
+      "scripts/lib/illustrations.ts",
+      "src/app/admin/(panel)/categories",
+      "src/app/admin/(panel)/account"
+    ],
+    "verification": "verify + e2e green",
     "remaining": ""
   }
 ]
