@@ -14,6 +14,10 @@ AS-19 (P3) wants product views, top categories and visitors (Google Analytics). 
 
 With no GA credentials, the dashboard's "Insights (last 30 days)" is built on a small first-party collector: `track()` also posts `product_view`, `category_view`, `search`, `whatsapp_order_click` and `instagram_order_click` to `POST /api/events` (sendBeacon, fetch keepalive fallback; skipped on Do Not Track / Global Privacy Control). Rows go to `analytics_events` with a per-day salted visitor hash (Plausible-style, no cookies, no raw IP or user agent) and are pruned after 180 days. Unique visitors are the sum of distinct daily hashes. Set `ANALYTICS_SALT` for counts that survive restarts and span instances. The Plausible seam is unchanged and can run alongside; details in `security.md` (Analytics privacy).
 
+## Update (security re-audit)
+
+The endpoint is public and its Origin check is advisory only, so storage and write load are bounded server-side: one row per event type, target, visitor hash and UTC day (unique index on a `day` column, migration `0005`; `recordEvent` returns `false` for repeats), a per-IP limit when the IP is known, and a global 20,000/day cap. A flood can at worst stop counting for the rest of the day; it cannot grow the table unboundedly or affect the storefront. IP keys are HMACed with `ANALYTICS_SALT`, IPv6 by /64.
+
 ## Alternatives considered
 
 - GA4 now: heavier, cookie consent, CSP loosening, P3 anyway.

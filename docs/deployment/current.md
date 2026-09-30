@@ -19,26 +19,27 @@ With Cache Components the production build prerenders pages and queries the data
 
 Validated by `src/server/config/env.ts`. Template: `.env.example`.
 
-| Variable                                   | Required            | Build | Runtime | Description                                                                            |
-| ------------------------------------------ | ------------------- | ----- | ------- | -------------------------------------------------------------------------------------- |
-| `SITE_URL`                                 | yes                 | yes   | yes     | Public origin, no trailing slash. https enables Secure cookies, HSTS, `__Host-` cookie |
-| `DATABASE_URL`                             | yes                 | yes   | yes     | Postgres URL                                                                           |
-| `DATABASE_POOL_MAX`                        | no (5)              |       | yes     | Connections per instance                                                               |
-| `DATABASE_PREPARE`                         | no (true)           | yes   | yes     | `false` behind transaction poolers (Supabase :6543, PgBouncer)                         |
-| `DATABASE_SSL`                             | no (disable)        | yes   | yes     | `disable`, `require`, `verify-full`. Use `require` on managed DBs                      |
-| `S3_ENDPOINT`                              | no                  | yes   | yes     | Empty for AWS S3; R2/Supabase/RustFS endpoint otherwise                                |
-| `S3_REGION`                                | no (us-east-1)      | yes   | yes     | `auto` for R2                                                                          |
-| `S3_BUCKET`                                | yes                 | yes   | yes     | Bucket name (min 3 chars)                                                              |
-| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | yes                 | yes   | yes     | Write-capable keys, server only                                                        |
-| `S3_FORCE_PATH_STYLE`                      | no (false)          | yes   | yes     | `true` for RustFS/MinIO and most non-AWS endpoints (verify per provider)               |
-| `MEDIA_BASE_URL`                           | yes                 | yes   | yes     | Public base URL of the bucket/CDN, no trailing slash. Also allowed in CSP `img-src`    |
-| `CLIENT_IP_HEADER`                         | no                  |       | yes     | Header your proxy sets with the real client IP; empty = one shared rate-limit bucket   |
-| `LOG_LEVEL`                                | no (info)           |       | yes     | debug, info, warn, error                                                               |
-| `ANALYTICS_PROVIDER`                       | no (none)           | yes   | yes     | `none` or `plausible`                                                                  |
-| `PLAUSIBLE_DOMAIN`, `PLAUSIBLE_SCRIPT_URL` | no                  | yes   | yes     | Only with plausible (the script URL is not yet in `.env.example`)                      |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`       | multi-instance only |       | yes     | base64 32 bytes; see scaling.md                                                        |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`            | scripts only        |       |         | Used by `admin:create`; never set on the web service                                   |
-| `SEED_WHATSAPP_NUMBER`                     | scripts only        |       |         | Overrides the placeholder `920000000000` when seeding                                  |
+| Variable                                   | Required            | Build | Runtime | Description                                                                                     |
+| ------------------------------------------ | ------------------- | ----- | ------- | ----------------------------------------------------------------------------------------------- |
+| `SITE_URL`                                 | yes                 | yes   | yes     | Public origin, no trailing slash. https enables Secure cookies, HSTS, `__Host-` cookie          |
+| `DATABASE_URL`                             | yes                 | yes   | yes     | Postgres URL                                                                                    |
+| `DATABASE_POOL_MAX`                        | no (5)              |       | yes     | Connections per instance                                                                        |
+| `DATABASE_PREPARE`                         | no (true)           | yes   | yes     | `false` behind transaction poolers (Supabase :6543, PgBouncer)                                  |
+| `DATABASE_SSL`                             | no (disable)        | yes   | yes     | `disable`, `require`, `verify-full`. Use `require` on managed DBs                               |
+| `S3_ENDPOINT`                              | no                  | yes   | yes     | Empty for AWS S3; R2/Supabase/RustFS endpoint otherwise                                         |
+| `S3_REGION`                                | no (us-east-1)      | yes   | yes     | `auto` for R2                                                                                   |
+| `S3_BUCKET`                                | yes                 | yes   | yes     | Bucket name (min 3 chars)                                                                       |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | yes                 | yes   | yes     | Write-capable keys, server only                                                                 |
+| `S3_FORCE_PATH_STYLE`                      | no (false)          | yes   | yes     | `true` for RustFS/MinIO and most non-AWS endpoints (verify per provider)                        |
+| `MEDIA_BASE_URL`                           | yes                 | yes   | yes     | Public base URL of the bucket/CDN, no trailing slash. Also allowed in CSP `img-src`             |
+| `CLIENT_IP_HEADER`                         | no                  |       | yes     | Header your proxy sets with the real client IP; empty = one shared rate-limit bucket            |
+| `LOG_LEVEL`                                | no (info)           |       | yes     | debug, info, warn, error                                                                        |
+| `ANALYTICS_PROVIDER`                       | no (none)           | yes   | yes     | `none` or `plausible`                                                                           |
+| `PLAUSIBLE_DOMAIN`, `PLAUSIBLE_SCRIPT_URL` | no                  | yes   | yes     | Only with plausible                                                                             |
+| `ANALYTICS_SALT`                           | recommended         |       | yes     | Secret for visitor hashes and IP keys (`openssl rand -hex 32`); empty = counts reset on restart |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`       | multi-instance only |       | yes     | base64 32 bytes; see scaling.md                                                                 |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`            | scripts only        |       |         | Used by `admin:create`; never set on the web service                                            |
+| `SEED_WHATSAPP_NUMBER`                     | scripts only        |       |         | Overrides the placeholder `920000000000` when seeding                                           |
 
 ## First-deploy checklist
 

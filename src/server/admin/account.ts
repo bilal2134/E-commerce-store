@@ -1,8 +1,7 @@
 import "server-only";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, ne } from "drizzle-orm";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { consumeRateLimit } from "../auth/rate-limit";
-import { revokeOtherSessions } from "../auth/session";
 import type { Database } from "../db/client";
 import { adminSessions, adminUsers } from "../db/schema";
 import { AdminError } from "./errors";
@@ -30,8 +29,19 @@ export async function changeAdminPassword(
     });
   }
   const passwordHash = await hashPassword(input.newPassword);
-  await database.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, input.adminId));
-  const revoked = await revokeOtherSessions(database, input.adminId, input.keepSessionId);
+  // One transaction: the new password and the revocation land together or not at all.
+  const revoked = await database.transaction(async (tx) => {
+    await tx.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, input.adminId));
+    const rows = await tx
+      .delete(adminSessions)
+      .where(
+        input.keepSessionId
+          ? and(eq(adminSessions.adminId, input.adminId), ne(adminSessions.id, input.keepSessionId))
+          : eq(adminSessions.adminId, input.adminId),
+      )
+      .returning({ id: adminSessions.id });
+    return rows.length;
+  });
   return { revoked };
 }
 

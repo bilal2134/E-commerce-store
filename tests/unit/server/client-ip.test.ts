@@ -19,3 +19,13 @@ describe("pickClientIp", () => {
     expect(pickClientIp("not-an-ip<script>", 1)).toBeNull();
   });
 });
+
+describe("ipLimitSubject", () => {
+  it("keeps IPv4 and reduces IPv6 to its /64", async () => {
+    const { ipLimitSubject } = await import("@/server/client-ip");
+    expect(ipLimitSubject("203.0.113.9")).toBe("203.0.113.9");
+    expect(ipLimitSubject("2001:db8:abcd:12::1")).toBe("2001:db8:abcd:12::/64");
+    expect(ipLimitSubject("2001:0db8:abcd:0012:ffff:1:2:3")).toBe("2001:db8:abcd:12::/64");
+    expect(ipLimitSubject("::1")).toBe("0:0:0:0::/64");
+  });
+});

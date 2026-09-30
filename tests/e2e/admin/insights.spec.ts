@@ -24,7 +24,7 @@ test("dashboard insights reflect storefront visits", async ({ page }) => {
   await page.goBack();
   await openProduct(page, 1);
   expect(page.url()).not.toBe(productUrl);
-  // View the first product twice so the ranking is deterministic.
+  // A repeat view by the same visitor on the same day is stored once.
   const again = page.waitForResponse(isEvent);
   await page.goto(productUrl);
   await again;
@@ -40,7 +40,8 @@ test("dashboard insights reflect storefront visits", async ({ page }) => {
   expect(Number(await visitors.textContent())).toBeGreaterThan(0);
 
   const top = insights.getByRole("list").filter({ has: page.getByRole("link") });
-  await expect(top.first()).toContainText("views");
+  await expect(top.first().getByRole("listitem").first()).toContainText(/1 view$/);
+  await expect(top.first()).not.toContainText("2 views");
   if (code) await expect(insights.getByText(code).first()).toBeVisible();
   await expect(insights.getByRole("table", { name: "Views per category" })).toContainText("Footwear");
   await expect(insights.getByText("First-party, cookie-free counts.")).toBeVisible();

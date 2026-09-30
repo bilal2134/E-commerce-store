@@ -20,3 +20,21 @@ export function pickClientIp(headerValue: string | null, trustedHops: number): s
   // Basic sanity: IPv4/IPv6 characters only, bounded length.
   return ip && /^[0-9a-fA-F:.]{2,45}$/.test(ip) ? ip : null;
 }
+
+/**
+ * The part of an address used for rate limiting: the full IPv4 address, or
+ * the /64 prefix of an IPv6 address (one subscriber usually controls a whole
+ * /64, so per-address limits would be trivial to rotate around).
+ */
+export function ipLimitSubject(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const [head = "", tail = ""] = ip.split("::");
+  const headParts = head ? head.split(":") : [];
+  const tailParts = tail ? tail.split(":") : [];
+  const missing = Math.max(0, 8 - headParts.length - tailParts.length);
+  const full = [...headParts, ...Array<string>(missing).fill("0"), ...tailParts];
+  return `${full
+    .slice(0, 4)
+    .map((h) => (h || "0").toLowerCase().replace(/^0+(?=.)/, ""))
+    .join(":")}::/64`;
+}

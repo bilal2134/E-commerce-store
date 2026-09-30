@@ -38,6 +38,17 @@ describe("recordEvent", () => {
     expect(row?.productId).toBeNull();
   });
 
+  it("stores one row per visitor, event and target per day", async () => {
+    const cat = await insertCategory(db, { slug: "heels" });
+    const p = await insertProduct(db, cat.id);
+    expect(await recordEvent(db, { type: "product_view", productCode: p.code }, "h1")).toBe(true);
+    expect(await recordEvent(db, { type: "product_view", productCode: p.code }, "h1")).toBe(false);
+    expect(await recordEvent(db, { type: "search" }, "h1")).toBe(true);
+    expect(await recordEvent(db, { type: "search" }, "h1")).toBe(false);
+    expect(await recordEvent(db, { type: "product_view", productCode: p.code }, "h2")).toBe(true);
+    expect(await db.$count(schema.analyticsEvents)).toBe(3);
+  });
+
   it("rejects unknown event types at the database", async () => {
     await expect(
       db.execute(sql`insert into analytics_events (type, visitor_day_hash) values ('bogus', 'x')`),
@@ -69,9 +80,9 @@ describe("getInsights", () => {
     await recordEvent(db, { type: "instagram_order_click", productCode: b.code }, "v1");
     // an old event outside the 30-day window, and a second-day visit by v1
     await db.execute(
-      sql`insert into analytics_events (type, product_id, visitor_day_hash, created_at)
-          values ('product_view', ${b.id}, 'old', now() - interval '45 days'),
-                 ('product_view', ${b.id}, 'v1', now() - interval '2 days')`,
+      sql`insert into analytics_events (type, product_id, visitor_day_hash, created_at, day)
+          values ('product_view', ${b.id}, 'old', now() - interval '45 days', ((now() - interval '45 days') at time zone 'utc')::date),
+                 ('product_view', ${b.id}, 'v1', now() - interval '2 days', ((now() - interval '2 days') at time zone 'utc')::date)`,
     );
 
     const data = await getInsights(db);

@@ -63,13 +63,19 @@ export async function recordEvent(
   if (body.type === "product_view" && !productId) return false;
   if (body.type === "category_view" && !categorySlug) return false;
 
-  await database.insert(analyticsEvents).values({
-    type: body.type,
-    productId,
-    categorySlug: body.type === "category_view" ? categorySlug : null,
-    visitorDayHash: visitorHash,
-  });
-  return true;
+  // Idempotent per visitor/event/target/day (unique index): repeats and floods
+  // can neither inflate counts nor grow the table.
+  const inserted = await database
+    .insert(analyticsEvents)
+    .values({
+      type: body.type,
+      productId,
+      categorySlug: body.type === "category_view" ? categorySlug : null,
+      visitorDayHash: visitorHash,
+    })
+    .onConflictDoNothing()
+    .returning({ id: analyticsEvents.id });
+  return inserted.length > 0;
 }
 
 /** Housekeeping: drop events past the retention window. Called opportunistically. */

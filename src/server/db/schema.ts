@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   foreignKey,
   index,
   integer,
@@ -451,6 +452,10 @@ export const analyticsEvents = pgTable(
     categorySlug: text("category_slug"),
     /** sha256(dailySalt + ipKey + userAgent + host), 32 hex chars; not linkable across days. */
     visitorDayHash: text("visitor_day_hash").notNull(),
+    /** UTC day of the event; with the unique index below, one row per visitor/event/target/day. */
+    day: date("day")
+      .notNull()
+      .default(sql`(now() at time zone 'utc')::date`),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
