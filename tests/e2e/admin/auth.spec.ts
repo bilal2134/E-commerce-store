@@ -55,7 +55,7 @@ test.describe("admin authentication", () => {
     const replay = await browser.newContext();
     await replay.addCookies(cookies);
     const replayPage = await replay.newPage();
-    await replayPage.goto("http://localhost:3100/admin/products");
+    await replayPage.goto(`http://localhost:${process.env.E2E_PORT ?? 3100}/admin/products`);
     await expect(replayPage).toHaveURL(/\/admin$/);
     await expect(replayPage.getByRole("button", { name: "Sign in" })).toBeVisible();
     await replay.close();

@@ -29,7 +29,9 @@ test.describe("SEO", () => {
   test("category HTML contains crawlable product links without JavaScript", async ({ request }) => {
     const html = await (await request.get("/shop/heels")).text();
     expect(html).toContain('href="/product/cherry-red-trendy-heels"');
-    expect(html).toContain('<link rel="canonical" href="http://localhost:3100/shop/heels"');
+    expect(html).toContain(
+      `<link rel="canonical" href="http://localhost:${process.env.E2E_PORT ?? 3100}/shop/heels"`,
+    );
     expect(html).not.toContain("draft-sample-heels");
   });
 

@@ -8,7 +8,8 @@ import { join } from "node:path";
 
 export const ADMIN_EMAIL = "owner@example.com";
 export const ADMIN_PASSWORD = "local-dev-password-123";
-export const TEST_DB_URL = "postgres://usba:usba_dev_password@localhost:54329/usba_test";
+export const TEST_DB_URL =
+  process.env.E2E_DATABASE_URL ?? "postgres://usba:usba_dev_password@localhost:54329/usba_test";
 
 export async function login(page: Page) {
   await page.goto("/admin");

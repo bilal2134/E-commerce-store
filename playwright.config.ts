@@ -1,11 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 3100;
+const PORT = Number(process.env.E2E_PORT ?? 3100);
 const BASE_URL = `http://localhost:${PORT}`;
 
 /** Environment for the app under test: always the TEST database, never the dev one. */
 export const E2E_ENV = {
-  DATABASE_URL: "postgres://usba:usba_dev_password@localhost:54329/usba_test",
+  DATABASE_URL: process.env.E2E_DATABASE_URL ?? "postgres://usba:usba_dev_password@localhost:54329/usba_test",
   SITE_URL: BASE_URL,
   ADMIN_EMAIL: "owner@example.com",
   ADMIN_PASSWORD: "local-dev-password-123",

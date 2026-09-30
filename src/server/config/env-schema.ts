@@ -53,6 +53,11 @@ export const envSchema = z.object({
   ANALYTICS_PROVIDER: z.enum(["none", "plausible"]).default("none"),
   PLAUSIBLE_DOMAIN: z.string().default(""),
   PLAUSIBLE_SCRIPT_URL: z.url().default("https://plausible.io/js/script.js"),
+  /**
+   * Secret for the first-party, cookie-free visitor hash (AS-19). Empty = a
+   * random per-process secret, so unique counts reset on restart.
+   */
+  ANALYTICS_SALT: z.string().default(""),
 });
 
 export function formatEnvIssues(error: z.ZodError): string {
