@@ -1,3 +1,4 @@
+import { SavedProvider } from "@/components/store/saved/saved-provider";
 import { SiteFooter } from "@/components/store/site-footer";
 import { SiteHeader } from "@/components/store/site-header";
 import { AnalyticsScript } from "@/components/store/analytics-script";
@@ -17,6 +18,7 @@ export default function StoreLayout({ children }: LayoutProps<"/">) {
       </main>
       <SiteFooter />
       <AnalyticsScript />
+      <SavedProvider />
     </>
   );
 }

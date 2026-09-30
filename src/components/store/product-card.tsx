@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 import { BadgeTag, StockTag } from "./badge-tag";
 import { Price } from "./price";
 import { ResponsiveImg } from "./responsive-image";
+import { SaveButton } from "./saved/save-button";
 
 /** Grid sizes: 2 cols mobile, 3 tablet, 4 desktop (max container 1440px). */
 export const CARD_SIZES = "(min-width: 80rem) 330px, (min-width: 64rem) 24vw, (min-width: 48rem) 32vw, 48vw";
@@ -51,6 +52,7 @@ export function ProductCard({
           {badge ? <BadgeTag badge={badge} /> : null}
           {product.stockStatus !== "in_stock" ? <StockTag status={product.stockStatus} /> : null}
         </div>
+        <SaveButton slug={product.slug} name={product.name} />
       </div>
       <div className="flex flex-1 flex-col gap-1 pt-3">
         <Heading className="text-sm leading-snug font-medium text-ink">
