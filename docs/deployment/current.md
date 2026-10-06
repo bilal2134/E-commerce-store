@@ -39,7 +39,7 @@ Validated by `src/server/config/env.ts`. Template: `.env.example`.
 | `ANALYTICS_SALT`                           | recommended         |       | yes     | Secret for visitor hashes and IP keys (`openssl rand -hex 32`); empty = counts reset on restart |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`       | multi-instance only |       | yes     | base64 32 bytes; see scaling.md                                                                 |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`            | scripts only        |       |         | Used by `admin:create`; never set on the web service                                            |
-| `SEED_WHATSAPP_NUMBER`                     | scripts only        |       |         | Overrides the placeholder `920000000000` when seeding                                           |
+| `SEED_WHATSAPP_NUMBER`                     | scripts only        |       |         | Overrides the owner number `923394009791` when seeding                                          |
 
 ## First-deploy checklist
 
@@ -48,7 +48,7 @@ Validated by `src/server/config/env.ts`. Template: `.env.example`.
 3. Run migrations against the production DB from a trusted machine: `DATABASE_URL=... pnpm db:migrate` (or `node scripts/migrate.mjs` from the image). Do not run `db:seed` in production unless you want demo products.
 4. Create the admin: `ADMIN_EMAIL=... ADMIN_PASSWORD=<12+ chars> DATABASE_URL=... pnpm admin:create`. Use a unique password (password manager).
 5. Deploy (Render Blueprint or another host) with all env vars set for build and runtime.
-6. Log in at `/admin/settings` and set the real WhatsApp number (AS-17), Instagram handles, delivery text, banner, about/FAQ/size chart. The seed value `920000000000` is a placeholder.
+6. Log in at `/admin/settings` and check the WhatsApp number (seeded as the owner number `923394009791`, AS-17), Instagram handles, delivery text, banner, about/FAQ/size chart.
 7. Upload real products and photos; verify a `wa.me` link opens with the right number.
 8. Verify `/api/health`, `/sitemap.xml`, `/robots.txt` (admin disallowed), response headers (CSP, HSTS) and that `/admin` sends `no-store`.
 9. Backups: enable provider backups/PITR (Neon/Supabase paid) and schedule `pg_dump` to a separate bucket (weekly minimum); back up the media bucket with `rclone` or bucket versioning/replication. Test one restore.

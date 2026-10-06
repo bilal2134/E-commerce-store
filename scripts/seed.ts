@@ -175,8 +175,8 @@ async function main() {
   await db
     .update(s.siteSettings)
     .set({
-      // Non-routable placeholder (no Pakistani number starts 920…). Replace in Admin → Settings.
-      whatsappNumber: process.env.SEED_WHATSAPP_NUMBER ?? "920000000000",
+      // Owner's WhatsApp Business number (+92 339 4009791), supplied 2026-10-06. Editable in Admin → Settings.
+      whatsappNumber: process.env.SEED_WHATSAPP_NUMBER ?? "923394009791",
       instagramHandle: "usbaofficial",
       collabInstagramHandle: "fairycoreforher",
       announcementEnabled: true,
