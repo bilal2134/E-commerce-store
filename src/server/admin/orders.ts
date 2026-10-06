@@ -1,10 +1,12 @@
 import "server-only";
 import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import type { OrderChannel, OrderStatus } from "@/domain/orders";
+import { orderHoldsStock } from "@/domain/stock";
 import type { ManualOrderInput } from "@/domain/validation/order";
 import type { Database } from "../db/client";
 import { orderItems, orders, orderStatusEvents, products, productSizes } from "../db/schema";
 import { AdminError } from "./errors";
+import { returnStock, takeStock } from "./stock";
 
 export const ORDERS_PAGE_SIZE = 15;
 
@@ -142,7 +144,10 @@ export async function getOrderDetail(database: Database, id: string): Promise<Or
   };
 }
 
-/** Creates an order with a snapshot of the product and its first status event. */
+/**
+ * Creates an order with a snapshot of the product and its first status event.
+ * Unless it's logged as cancelled, the order takes its items from stock.
+ */
 export async function createManualOrder(
   database: Database,
   adminId: string,
@@ -177,14 +182,21 @@ export async function createManualOrder(
         notes: input.notes,
       })
       .returning({ id: orders.id, code: orders.code });
+    const line = {
+      productId: product.id,
+      size: sizes.length > 0 ? input.size : null,
+      quantity: input.quantity,
+    };
+    const stockDeducted = orderHoldsStock(input.status) ? await takeStock(tx, line) : false;
     await tx.insert(orderItems).values({
       orderId: order!.id,
       productId: product.id,
       productName: product.name,
       productCode: product.code,
-      size: sizes.length > 0 ? input.size : null,
+      size: line.size,
       quantity: input.quantity,
       unitPricePkr: input.unitPricePkr,
+      stockDeducted,
     });
     await tx.insert(orderStatusEvents).values({
       orderId: order!.id,
@@ -212,6 +224,19 @@ export async function changeOrderStatus(
       .for("update");
     if (!order) throw new AdminError("This order no longer exists.");
     if (order.status === status) throw new AdminError("The order already has this status.");
+    // Cancelling gives the items back to stock; reopening a cancelled order takes them again.
+    const wasHolding = orderHoldsStock(order.status);
+    if (wasHolding !== orderHoldsStock(status)) {
+      const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+      for (const item of items) {
+        if (wasHolding && item.stockDeducted) {
+          await returnStock(tx, item);
+          await tx.update(orderItems).set({ stockDeducted: false }).where(eq(orderItems.id, item.id));
+        } else if (!wasHolding && !item.stockDeducted && (await takeStock(tx, item))) {
+          await tx.update(orderItems).set({ stockDeducted: true }).where(eq(orderItems.id, item.id));
+        }
+      }
+    }
     await tx.update(orders).set({ status }).where(eq(orders.id, orderId));
     await tx.insert(orderStatusEvents).values({
       orderId,

@@ -5,6 +5,7 @@ import type { Badge, Color, StockStatus } from "@/domain/catalog";
 import type { ResponsiveImage } from "@/domain/images";
 import type { Catalog, CategoryTree } from "@/domain/category";
 import { defaultImageAlt, type ProductCard, type ProductDetail } from "@/domain/product";
+import { visibleRemaining } from "@/domain/stock";
 import type { Database } from "../db/client";
 import {
   categories,
@@ -168,6 +169,7 @@ export async function fetchVisibleProductBySlug(
       pricePkr: products.pricePkr,
       salePricePkr: products.salePricePkr,
       stockStatus: products.stockStatus,
+      stockQuantity: products.stockQuantity,
       badge: products.badge,
       collabPartner: products.collabPartner,
       colors: products.colors,
@@ -189,7 +191,11 @@ export async function fetchVisibleProductBySlug(
       .where(eq(productImages.productId, row.id))
       .orderBy(asc(productImages.position)),
     ctx.db
-      .select({ label: productSizes.label, isAvailable: productSizes.isAvailable })
+      .select({
+        label: productSizes.label,
+        isAvailable: productSizes.isAvailable,
+        stockQuantity: productSizes.stockQuantity,
+      })
       .from(productSizes)
       .where(eq(productSizes.productId, row.id))
       .orderBy(asc(productSizes.position), asc(productSizes.label)),
@@ -199,9 +205,13 @@ export async function fetchVisibleProductBySlug(
     toResponsiveImage(ctx, img, defaultImageAlt(row.name, i, imageRows.length)),
   );
 
+  // Exact counts stay on the server; only a low count reaches the page.
+  const { stockQuantity, ...product } = row;
+  const stockStatus = row.stockStatus as StockStatus;
   return {
-    ...row,
-    stockStatus: row.stockStatus as StockStatus,
+    ...product,
+    stockStatus,
+    remaining: visibleRemaining(stockQuantity, stockStatus),
     badge: (row.badge ?? null) as Badge | null,
     colors: row.colors as Color[],
     createdAt: row.createdAt.toISOString(),
@@ -209,7 +219,11 @@ export async function fetchVisibleProductBySlug(
     image: images[0] ?? null,
     hoverImage: images[1] ?? null,
     images,
-    sizes: sizeRows,
+    sizes: sizeRows.map((s) => ({
+      label: s.label,
+      isAvailable: s.isAvailable,
+      remaining: s.isAvailable ? visibleRemaining(s.stockQuantity, stockStatus) : null,
+    })),
   };
 }
 

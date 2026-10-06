@@ -78,10 +78,17 @@ export interface SeedProduct {
   hidden?: boolean;
   /** Sizes that are sold out (footwear only). */
   soldOutSizes?: string[];
+  /** Sample counts: per size for footwear (default SEED_STOCK_PER_SIZE), else one count (default SEED_STOCK). */
+  stockCounts?: Partial<Record<string, number>>;
+  stockCount?: number;
   description?: string;
   /** Days before seeding the product was "created" (for Newest ordering). */
   ageDays: number;
 }
+
+/** Sample stock counts (preorder items aren't counted). */
+export const SEED_STOCK_PER_SIZE = 6;
+export const SEED_STOCK = 12;
 
 export const SEED_PRODUCTS: SeedProduct[] = [
   // Heels & Pumps
@@ -90,6 +97,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     category: "heels",
     price: 2499,
     sale: 1999,
+    stockCounts: { "37": 2, "38": 3 },
     badge: "new_arrival",
     colors: ["red"],
     featured: 1,
@@ -215,6 +223,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
   // Mini bags & clutches
   {
     name: "Golden Shell Clutch",
+    stockCount: 3,
     category: "clutches",
     price: 2499,
     badge: "bestseller",

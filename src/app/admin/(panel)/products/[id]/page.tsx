@@ -59,10 +59,18 @@ export default async function EditProductPage({
           isVisible: product.isVisible,
           featured: product.featuredRank !== null,
           sizes: product.sizes
-            .filter((s): s is { label: (typeof FOOTWEAR_SIZES)[number]; isAvailable: boolean } =>
+            .filter((s): s is typeof s & { label: (typeof FOOTWEAR_SIZES)[number] } =>
               (FOOTWEAR_SIZES as readonly string[]).includes(s.label),
             )
-            .map((s) => ({ label: s.label, isAvailable: s.isAvailable })),
+            .map((s) => ({
+              label: s.label,
+              isAvailable: s.isAvailable,
+              quantity: s.stockQuantity === null ? "" : String(s.stockQuantity),
+              base: s.stockQuantity,
+            })),
+          trackStock: product.stockQuantity !== null,
+          quantity: product.stockQuantity === null ? "" : String(product.stockQuantity),
+          quantityBase: product.stockQuantity,
         }}
         initialImages={product.images.map((img) => ({
           ...img,

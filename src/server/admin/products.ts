@@ -1,12 +1,14 @@
 import "server-only";
 import { and, asc, desc, eq, ilike, isNotNull, ne, or, sql, type SQL } from "drizzle-orm";
 import { FOOTWEAR_SIZES, MIN_PRODUCT_IMAGES, SIZED_ROOT_CATEGORY, type StockStatus } from "@/domain/catalog";
+import { rebaseQuantity } from "@/domain/stock";
 import type { ProductInput } from "@/domain/validation/product";
 import type { Database } from "../db/client";
 import { categories, productImages, products, productSizes } from "../db/schema";
 import { imageObjectKeys } from "../images/pipeline";
 import type { ObjectStorage } from "../storage/types";
 import { AdminError, uniqueViolation } from "./errors";
+import { syncProductStock } from "./stock";
 
 /* ------------------------------------------------------------------ */
 /* Reads                                                               */
@@ -61,6 +63,8 @@ export interface ProductListRow {
   pricePkr: number;
   salePricePkr: number | null;
   stockStatus: StockStatus;
+  /** Null when stock isn't counted. */
+  stockQuantity: number | null;
   badge: string | null;
   isVisible: boolean;
   featuredRank: number | null;
@@ -114,6 +118,7 @@ export async function listProducts(
       pricePkr: products.pricePkr,
       salePricePkr: products.salePricePkr,
       stockStatus: products.stockStatus,
+      stockQuantity: products.stockQuantity,
       badge: products.badge,
       isVisible: products.isVisible,
       featuredRank: products.featuredRank,
@@ -143,6 +148,7 @@ export async function listProducts(
       pricePkr: r.pricePkr,
       salePricePkr: r.salePricePkr,
       stockStatus: r.stockStatus,
+      stockQuantity: r.stockQuantity,
       badge: r.badge,
       isVisible: r.isVisible,
       featuredRank: r.featuredRank,
@@ -169,7 +175,9 @@ export interface ProductForEdit {
   colors: string[];
   isVisible: boolean;
   featuredRank: number | null;
-  sizes: { label: string; isAvailable: boolean }[];
+  /** Null when stock isn't tracked. */
+  stockQuantity: number | null;
+  sizes: { label: string; isAvailable: boolean; stockQuantity: number | null }[];
   images: {
     storageKey: string;
     widths: number[];
@@ -211,7 +219,8 @@ export async function getProductForEdit(database: Database, id: string): Promise
     colors: p.colors,
     isVisible: p.isVisible,
     featuredRank: p.featuredRank,
-    sizes: sizes.map((s) => ({ label: s.label, isAvailable: s.isAvailable })),
+    stockQuantity: p.stockQuantity,
+    sizes: sizes.map((s) => ({ label: s.label, isAvailable: s.isAvailable, stockQuantity: s.stockQuantity })),
     images: images.map((i) => ({
       storageKey: i.storageKey,
       widths: i.widths,
@@ -232,19 +241,28 @@ export async function listProductOptions(database: Database) {
       name: products.name,
       pricePkr: products.pricePkr,
       salePricePkr: products.salePricePkr,
+      stockStatus: products.stockStatus,
+      stockQuantity: products.stockQuantity,
     })
     .from(products)
     .orderBy(asc(products.name));
   const sizes = await database
-    .select({ productId: productSizes.productId, label: productSizes.label })
+    .select({ productId: productSizes.productId, label: productSizes.label, qty: productSizes.stockQuantity })
     .from(productSizes)
     .orderBy(asc(productSizes.position));
   const byProduct = new Map<string, string[]>();
-  for (const s of sizes) byProduct.set(s.productId, [...(byProduct.get(s.productId) ?? []), s.label]);
+  const sizeStock = new Map<string, Record<string, number>>();
+  for (const s of sizes) {
+    byProduct.set(s.productId, [...(byProduct.get(s.productId) ?? []), s.label]);
+    if (s.qty !== null) sizeStock.set(s.productId, { ...sizeStock.get(s.productId), [s.label]: s.qty });
+  }
   return rows.map((r) => ({
     ...r,
     currentPrice: r.salePricePkr !== null && r.salePricePkr < r.pricePkr ? r.salePricePkr : r.pricePkr,
     sizes: byProduct.get(r.id) ?? [],
+    /** Units left (null = not counted, or preorder, where stock isn't used). */
+    stockLeft: r.stockQuantity === null || r.stockStatus === "preorder" ? null : r.stockQuantity,
+    sizeStockLeft: r.stockStatus === "preorder" ? null : (sizeStock.get(r.id) ?? null),
   }));
 }
 
@@ -301,21 +319,53 @@ async function nextFeaturedRank(tx: Tx): Promise<number> {
   return (row?.max ?? 0) + 1;
 }
 
+/** Whether the product's sizes are stored (footwear with at least one size ticked). */
+function hasSizes(rootSlug: string, input: ProductInput): boolean {
+  return rootSlug === SIZED_ROOT_CATEGORY && input.sizes.length > 0;
+}
+
+/**
+ * Product-level count to store. Sized products start at 0 and get the sum of
+ * their sizes from syncProductStock. Edits of a tracked product are rebased
+ * on the current count so orders logged meanwhile aren't lost.
+ */
+function productQuantity(rootSlug: string, input: ProductInput, current: number | null): number | null {
+  if (!input.trackStock) return null;
+  if (hasSizes(rootSlug, input)) return current ?? 0;
+  const next = input.stockQuantity ?? 0;
+  return current !== null && input.stockBase !== null ? rebaseQuantity(current, input.stockBase, next) : next;
+}
+
 async function writeSizesAndImages(
   tx: Tx,
   productId: string,
   rootSlug: string,
   input: ProductInput,
 ): Promise<void> {
+  const previous = new Map(
+    (
+      await tx
+        .select({ label: productSizes.label, qty: productSizes.stockQuantity })
+        .from(productSizes)
+        .where(eq(productSizes.productId, productId))
+    ).map((s) => [s.label, s.qty]),
+  );
   await tx.delete(productSizes).where(eq(productSizes.productId, productId));
-  if (rootSlug === SIZED_ROOT_CATEGORY && input.sizes.length > 0) {
-    await tx
-      .insert(productSizes)
-      .values(
-        [...input.sizes]
-          .sort((a, b) => FOOTWEAR_SIZES.indexOf(a.label) - FOOTWEAR_SIZES.indexOf(b.label))
-          .map((s, position) => ({ productId, label: s.label, position, isAvailable: s.isAvailable })),
-      );
+  if (hasSizes(rootSlug, input)) {
+    await tx.insert(productSizes).values(
+      [...input.sizes]
+        .sort((a, b) => FOOTWEAR_SIZES.indexOf(a.label) - FOOTWEAR_SIZES.indexOf(b.label))
+        .map((s, position) => {
+          const current = previous.get(s.label) ?? null;
+          const next = s.stockQuantity ?? 0;
+          const stockQuantity = !input.trackStock
+            ? null
+            : current !== null && s.stockBase !== null
+              ? rebaseQuantity(current, s.stockBase, next)
+              : next;
+          return { productId, label: s.label, position, isAvailable: s.isAvailable, stockQuantity };
+        }),
+    );
   }
   await tx.delete(productImages).where(eq(productImages.productId, productId));
   if (input.images.length > 0) {
@@ -363,6 +413,7 @@ export async function createProduct(database: Database, input: ProductInput): Pr
           pricePkr: input.pricePkr,
           salePricePkr: input.salePricePkr,
           stockStatus: input.stockStatus,
+          stockQuantity: productQuantity(rootSlug, input, null),
           badge: input.badge,
           collabPartner: input.collabPartner,
           colors: input.colors,
@@ -371,6 +422,7 @@ export async function createProduct(database: Database, input: ProductInput): Pr
         })
         .returning({ id: products.id });
       await writeSizesAndImages(tx, row!.id, rootSlug, input);
+      await syncProductStock(tx, row!.id);
       return { id: row!.id };
     });
   } catch (err) {
@@ -390,7 +442,11 @@ export async function updateProduct(
   try {
     removed = await database.transaction(async (tx) => {
       const [existing] = await tx
-        .select({ id: products.id, featuredRank: products.featuredRank })
+        .select({
+          id: products.id,
+          featuredRank: products.featuredRank,
+          stockQuantity: products.stockQuantity,
+        })
         .from(products)
         .where(eq(products.id, id))
         .for("update");
@@ -411,6 +467,7 @@ export async function updateProduct(
           pricePkr: input.pricePkr,
           salePricePkr: input.salePricePkr,
           stockStatus: input.stockStatus,
+          stockQuantity: productQuantity(rootSlug, input, existing.stockQuantity),
           badge: input.badge,
           collabPartner: input.collabPartner,
           colors: input.colors,
@@ -419,6 +476,7 @@ export async function updateProduct(
         })
         .where(eq(products.id, id));
       await writeSizesAndImages(tx, id, rootSlug, input);
+      await syncProductStock(tx, id);
       if (!input.featured && existing.featuredRank !== null) await compactFeaturedRanks(tx);
       const kept = new Set(input.images.map((i) => i.storageKey));
       return oldImages.filter((o) => !kept.has(o.storageKey));
@@ -495,13 +553,31 @@ export async function setProductVisibility(database: Database, id: string, visib
   if (updated.length === 0) throw new AdminError("This product no longer exists.");
 }
 
+/**
+ * Quick status change from the products list. For products that track
+ * stock, only preorder is a choice; in/out of stock follow the count.
+ */
 export async function setProductStock(database: Database, id: string, stock: StockStatus): Promise<void> {
-  const updated = await database
-    .update(products)
-    .set({ stockStatus: stock })
-    .where(eq(products.id, id))
-    .returning({ id: products.id });
-  if (updated.length === 0) throw new AdminError("This product no longer exists.");
+  await database.transaction(async (tx) => {
+    const [product] = await tx
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, id))
+      .for("update");
+    if (!product) throw new AdminError("This product no longer exists.");
+    await tx.update(products).set({ stockStatus: stock }).where(eq(products.id, id));
+    await syncProductStock(tx, id);
+    const [after] = await tx
+      .select({ status: products.stockStatus })
+      .from(products)
+      .where(eq(products.id, id));
+    if (after && after.status !== stock) {
+      const shown = after.status === "in_stock" ? "In stock" : "Out of stock";
+      throw new AdminError(
+        `This product counts its stock, so it shows “${shown}” from the count. Change the count under Stock.`,
+      );
+    }
+  });
 }
 
 /* ------------------------------------------------------------------ */

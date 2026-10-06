@@ -62,7 +62,11 @@ export function productJsonLd(siteUrl: string, product: ProductDetail, pagePath?
     url,
     priceCurrency: "PKR",
     price: price.current,
-    availability: AVAILABILITY[product.stockStatus],
+    // Matches the "Only N left" shown on the page.
+    availability:
+      product.remaining !== null
+        ? "https://schema.org/LimitedAvailability"
+        : AVAILABILITY[product.stockStatus],
     itemCondition: "https://schema.org/NewCondition",
     seller: { "@id": `${siteUrl}/#organization` },
   };

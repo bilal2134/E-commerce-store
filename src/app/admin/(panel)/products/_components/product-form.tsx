@@ -19,6 +19,7 @@ import {
   STOCK_STATUS_LABELS,
   STOCK_STATUSES,
 } from "@/domain/catalog";
+import { LOW_STOCK_THRESHOLD } from "@/domain/stock";
 import { fieldErrorsFrom, slugify } from "@/domain/validation/common";
 import {
   productFormSchema,
@@ -100,8 +101,18 @@ export function ProductForm(props: ProductFormProps) {
   function toggleSize(label: (typeof FOOTWEAR_SIZES)[number], offered: boolean) {
     set(
       "sizes",
-      offered ? [...v.sizes, { label, isAvailable: true }] : v.sizes.filter((s) => s.label !== label),
+      offered
+        ? [...v.sizes, { label, isAvailable: true, quantity: "", base: null }]
+        : v.sizes.filter((s) => s.label !== label),
     );
+  }
+
+  function setSizeQuantity(label: (typeof FOOTWEAR_SIZES)[number], quantity: string) {
+    set(
+      "sizes",
+      v.sizes.map((s) => (s.label === label ? { ...s, quantity } : s)),
+    );
+    setDismissed((d) => ({ ...d, [`quantity-${label}`]: true }));
   }
 
   function toggleColor(color: string, on: boolean) {
@@ -117,6 +128,11 @@ export function ProductForm(props: ProductFormProps) {
     alt: img.alt,
   }));
   const visibleBlocked = v.isVisible && images.length < 2;
+  // Per-size counts for footwear with sizes ticked; one count otherwise.
+  const countsPerSize = v.trackStock && effectiveSizes.length > 0;
+  const total = countsPerSize
+    ? effectiveSizes.reduce((sum, s) => sum + (/^\d+$/.test(s.quantity) ? Number(s.quantity) : 0), 0)
+    : null;
 
   return (
     <form
@@ -128,6 +144,8 @@ export function ProductForm(props: ProductFormProps) {
       {productId ? <input type="hidden" name="productId" value={productId} /> : null}
       <input type="hidden" name="images" value={JSON.stringify(imagePayload)} />
       <input type="hidden" name="sizes" value={JSON.stringify(effectiveSizes)} />
+      {v.trackStock ? <input type="hidden" name="trackStock" value="on" /> : null}
+      {v.quantityBase !== null ? <input type="hidden" name="quantityBase" value={v.quantityBase} /> : null}
 
       {props.notice ? <StatusMessage result={{ ok: true, message: props.notice }} /> : null}
 
@@ -250,19 +268,31 @@ export function ProductForm(props: ProductFormProps) {
               />
             )}
           </Field>
-          <Field id="stockStatus" label="Stock status" error={error("stockStatus")}>
+          <Field
+            id="stockStatus"
+            label="Stock status"
+            error={error("stockStatus")}
+            hint={v.trackStock ? "In stock or out of stock follows the count." : undefined}
+          >
             {(aria) => (
               <Select
                 {...aria}
                 name="stockStatus"
-                value={v.stockStatus}
+                value={v.trackStock && v.stockStatus !== "preorder" ? "in_stock" : v.stockStatus}
                 onChange={(e) => set("stockStatus", e.target.value as typeof v.stockStatus)}
               >
-                {STOCK_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STOCK_STATUS_LABELS[s]}
-                  </option>
-                ))}
+                {v.trackStock ? (
+                  <>
+                    <option value="in_stock">From the count</option>
+                    <option value="preorder">{STOCK_STATUS_LABELS.preorder}</option>
+                  </>
+                ) : (
+                  STOCK_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {STOCK_STATUS_LABELS[s]}
+                    </option>
+                  ))
+                )}
               </Select>
             )}
           </Field>
@@ -312,10 +342,60 @@ export function ProductForm(props: ProductFormProps) {
         </fieldset>
       </Panel>
 
+      <Panel
+        title="Stock"
+        description={`Customers see “Only N left” when ${LOW_STOCK_THRESHOLD} or fewer remain. Logging an order takes it from stock; cancelling puts it back.`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p id="track-label" className="text-sm font-medium">
+              Count stock
+            </p>
+            <p id="track-hint" className="text-sm text-muted">
+              {v.trackStock
+                ? countsPerSize
+                  ? `Counted per size below. Total: ${total}.`
+                  : "Counted for the whole product."
+                : "Off. Set the stock status by hand."}
+            </p>
+          </div>
+          <Switch
+            checked={v.trackStock}
+            onCheckedChange={(next) => set("trackStock", next)}
+            aria-labelledby="track-label"
+            aria-describedby="track-hint"
+          />
+        </div>
+        {v.trackStock && !countsPerSize ? (
+          <Field
+            id="quantity"
+            label={sized ? "Quantity in stock (tick sizes below to count per size)" : "Quantity in stock"}
+            required
+            error={error("quantity")}
+            className="mt-5 max-w-xs"
+          >
+            {(aria) => (
+              <Input
+                {...aria}
+                name="quantity"
+                inputMode="numeric"
+                value={v.quantity}
+                onBlur={touch("quantity")}
+                onChange={(e) => set("quantity", e.target.value)}
+              />
+            )}
+          </Field>
+        ) : null}
+      </Panel>
+
       {sized ? (
         <Panel
           title="Sizes"
-          description="Tick the sizes you offer. Untick “Available” when a size is sold out."
+          description={
+            v.trackStock
+              ? "Tick the sizes you offer and enter how many pairs you have of each (0 when sold out)."
+              : "Tick the sizes you offer. Untick “Available” when a size is sold out."
+          }
         >
           <fieldset>
             <legend className="sr-only">Sizes offered</legend>
@@ -333,26 +413,50 @@ export function ProductForm(props: ProductFormProps) {
                       />
                       Size {label}
                     </label>
-                    <label
-                      className={`flex min-h-11 items-center gap-2 text-sm ${entry ? "text-ink-soft" : "text-muted opacity-60"}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={entry?.isAvailable ?? false}
-                        disabled={!entry}
-                        onChange={(e) =>
-                          set(
-                            "sizes",
-                            v.sizes.map((s) =>
-                              s.label === label ? { ...s, isAvailable: e.target.checked } : s,
-                            ),
-                          )
-                        }
-                        className="size-4 accent-cherry"
-                      />
-                      Available
-                      <span className="sr-only"> in size {label}</span>
-                    </label>
+                    {v.trackStock ? (
+                      entry ? (
+                        <Field
+                          id={`quantity-${label}`}
+                          label={
+                            <>
+                              Pairs<span className="sr-only"> in size {label}</span>
+                            </>
+                          }
+                          error={error(`quantity-${label}`)}
+                        >
+                          {(aria) => (
+                            <Input
+                              {...aria}
+                              inputMode="numeric"
+                              value={entry.quantity}
+                              onBlur={touch(`quantity-${label}`)}
+                              onChange={(e) => setSizeQuantity(label, e.target.value)}
+                            />
+                          )}
+                        </Field>
+                      ) : null
+                    ) : (
+                      <label
+                        className={`flex min-h-11 items-center gap-2 text-sm ${entry ? "text-ink-soft" : "text-muted opacity-60"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={entry?.isAvailable ?? false}
+                          disabled={!entry}
+                          onChange={(e) =>
+                            set(
+                              "sizes",
+                              v.sizes.map((s) =>
+                                s.label === label ? { ...s, isAvailable: e.target.checked } : s,
+                              ),
+                            )
+                          }
+                          className="size-4 accent-cherry"
+                        />
+                        Available
+                        <span className="sr-only"> in size {label}</span>
+                      </label>
+                    )}
                   </li>
                 );
               })}

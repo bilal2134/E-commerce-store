@@ -57,6 +57,13 @@
       "when": 1791276188274,
       "tag": "0007_analytics_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791310508898,
+      "tag": "0008_stock_quantities",
+      "breakpoints": true
     }
   ]
 }

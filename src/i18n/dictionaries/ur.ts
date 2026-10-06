@@ -170,6 +170,8 @@ export const ur: Dictionary = {
     sizeEu: "سائز (EU)",
     chooseSize: "آگے بڑھنے کے لیے اپنا سائز چنیں۔",
     soldOut: "(ختم)",
+    onlyLeft: (n: number) => `صرف ${n} باقی`,
+    onlyLeftInSize: (n: number, size: string) => `سائز ${size} میں صرف ${n} باقی`,
     orderOnWhatsapp: "واٹس ایپ پر آرڈر کریں",
     preorderOnWhatsapp: "واٹس ایپ پر پری آرڈر کریں",
     order: "آرڈر",

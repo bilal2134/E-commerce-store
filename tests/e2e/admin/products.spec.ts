@@ -38,6 +38,8 @@ test.describe.serial("admin products", () => {
     await page.locator("#description").fill("Soft velvet bag with a bow, made for the E2E suite.");
     await page.locator("#price").fill("4500");
     await page.getByLabel("Badge").selectOption({ label: "New Arrival" });
+    // New products count stock by default.
+    await page.locator("#quantity").fill("4");
 
     await page.getByTestId("product-image-input").setInputFiles([a, b]);
     await expect(page.getByText("Photo 1 · Thumbnail")).toBeVisible({ timeout: 30_000 });
@@ -63,6 +65,7 @@ test.describe.serial("admin products", () => {
     // AS-02: the new product is live on the storefront immediately.
     await page.goto(`/product/${SLUG}`);
     await expect(page.getByRole("heading", { level: 1, name: NAME })).toBeVisible();
+    await expect(page.locator("main").getByText("Only 4 left")).toBeVisible();
     await page.goto("/shop/clutches");
     await expect(page.getByRole("link", { name: NAME })).toBeVisible();
   });
@@ -75,6 +78,7 @@ test.describe.serial("admin products", () => {
     await page.getByLabel("Category").selectOption({ label: "Wallets" });
     await page.locator("#description").fill("Duplicate slug attempt.");
     await page.locator("#price").fill("900");
+    await page.locator("#quantity").fill("1");
     await page.getByTestId("product-image-input").setInputFiles([a, b]);
     await expect(page.getByText("2 of 6 photos")).toBeVisible({ timeout: 30_000 });
     await page.getByRole("button", { name: "Save product" }).click();
@@ -102,24 +106,28 @@ test.describe.serial("admin products", () => {
     await expect(page.getByText("Sale price must be lower than the regular price").first()).toBeVisible();
   });
 
-  test("toggle visibility and stock status from the list", async ({ page }) => {
+  test("toggle visibility from the list and sell out on the Stock page", async ({ page }) => {
     await findInList(page, NAME);
     const toggle = page.getByRole("switch", { name: `Visible on site: ${NAME}` });
     await toggle.click();
     await expect(page.getByRole("status").filter({ hasText: "Product is now hidden" })).toBeVisible();
     await expect(toggle).toHaveAttribute("aria-checked", "false");
 
-    const stock = page.getByRole("combobox", { name: `Stock status for ${NAME}` });
-    await stock.selectOption("out_of_stock");
-    await expect(page.getByRole("status").filter({ hasText: "Stock status updated" })).toBeVisible();
+    // Counted products show their count instead of a status menu; selling out happens on Stock.
+    await expect(page.getByRole("combobox", { name: `Stock status for ${NAME}` })).toHaveCount(0);
+    await page
+      .getByRole("link", { name: `4 left of ${NAME}, change stock` })
+      .first()
+      .click();
+    const count = page.getByRole("textbox", { name: `Count: In stock, ${NAME}` });
+    await count.fill("0");
+    await count.press("Enter");
+    await expect(page.getByRole("status")).toContainText(`${NAME}: 0 in stock`);
 
-    await page.reload();
+    await findInList(page, NAME);
     await expect(page.getByRole("switch", { name: `Visible on site: ${NAME}` })).toHaveAttribute(
       "aria-checked",
       "false",
-    );
-    await expect(page.getByRole("combobox", { name: `Stock status for ${NAME}` })).toHaveValue(
-      "out_of_stock",
     );
 
     // Stock filter finds it.

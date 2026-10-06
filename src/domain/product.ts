@@ -26,6 +26,8 @@ export interface ProductCard {
 export interface ProductSize {
   label: string;
   isAvailable: boolean;
+  /** "Only N left" count for this size, or null (see visibleRemaining). */
+  remaining: number | null;
 }
 
 export interface ProductDetail extends ProductCard {
@@ -33,6 +35,8 @@ export interface ProductDetail extends ProductCard {
   images: ResponsiveImage[];
   sizes: ProductSize[];
   rootCategoryName: string;
+  /** "Only N left" count for the product, or null when not low or not counted. */
+  remaining: number | null;
   /** ISO timestamp. */
   updatedAt: string;
 }

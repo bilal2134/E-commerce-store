@@ -9,6 +9,7 @@ import {
 } from "../catalog";
 import { IMAGE_MAX_EDGE, IMAGE_VARIANT_WIDTHS } from "../images";
 import { normalizeInstagramHandle } from "../ordering";
+import { parseQuantity } from "../stock";
 import { formString, jsonField, optionalRupees, parseRupees, requiredRupees, SLUG_RE } from "./common";
 
 export const DEFAULT_COLLAB_HANDLE = "fairycoreforher";
@@ -36,8 +37,14 @@ export interface ProductImageDraft extends ProductImageInput {
 
 export const sizeSchema = z.object({
   label: z.enum(FOOTWEAR_SIZES),
+  /** Manual availability; ignored (follows the quantity) when stock is tracked. */
   isAvailable: z.boolean(),
+  /** Quantity as typed in the form; "" when stock isn't tracked. */
+  quantity: z.string().max(10).default(""),
+  /** Quantity the form was loaded with (null for sizes not tracked yet), see rebaseQuantity. */
+  base: z.number().int().min(0).nullable().default(null),
 });
+export type SizeFormValue = z.infer<typeof sizeSchema>;
 
 export interface ProductFormValues {
   name: string;
@@ -53,9 +60,17 @@ export interface ProductFormValues {
   colors: string[];
   isVisible: boolean;
   featured: boolean;
-  sizes: { label: (typeof FOOTWEAR_SIZES)[number]; isAvailable: boolean }[];
+  sizes: SizeFormValue[];
+  /** Count units in stock (per size for footwear) instead of setting the status by hand. */
+  trackStock: boolean;
+  /** Quantity for products without sizes, as typed. */
+  quantity: string;
+  /** Quantity the form was loaded with; null when the product wasn't tracked. */
+  quantityBase: number | null;
   images: ProductImageInput[];
 }
+
+const QUANTITY_HINT = "Enter a whole number of pairs or pieces (0 if sold out)";
 
 export const productFormSchema = z
   .object({
@@ -82,6 +97,9 @@ export const productFormSchema = z
     isVisible: z.boolean(),
     featured: z.boolean(),
     sizes: z.array(sizeSchema).max(FOOTWEAR_SIZES.length),
+    trackStock: z.boolean(),
+    quantity: z.string().max(10),
+    quantityBase: z.number().int().min(0).nullable(),
     images: z.array(productImageSchema).max(MAX_PRODUCT_IMAGES, `Up to ${MAX_PRODUCT_IMAGES} images`),
   })
   .superRefine((v, ctx) => {
@@ -112,6 +130,15 @@ export const productFormSchema = z
     if (new Set(labels).size !== labels.length) {
       ctx.addIssue({ code: "custom", path: ["sizes"], message: "Duplicate sizes" });
     }
+    if (v.trackStock && v.sizes.length > 0) {
+      for (const size of v.sizes) {
+        if (parseQuantity(size.quantity) === null) {
+          ctx.addIssue({ code: "custom", path: [`quantity-${size.label}`], message: QUANTITY_HINT });
+        }
+      }
+    } else if (v.trackStock && parseQuantity(v.quantity) === null) {
+      ctx.addIssue({ code: "custom", path: ["quantity"], message: QUANTITY_HINT });
+    }
   });
 
 /** Validated, normalised product ready for the database. */
@@ -128,7 +155,17 @@ export interface ProductInput {
   colors: (typeof COLORS)[number][];
   isVisible: boolean;
   featured: boolean;
-  sizes: { label: (typeof FOOTWEAR_SIZES)[number]; isAvailable: boolean }[];
+  sizes: {
+    label: (typeof FOOTWEAR_SIZES)[number];
+    isAvailable: boolean;
+    /** Null when stock isn't tracked. */
+    stockQuantity: number | null;
+    stockBase: number | null;
+  }[];
+  trackStock: boolean;
+  /** Products without sizes: the count (null when not tracked). Sized products use their sizes. */
+  stockQuantity: number | null;
+  stockBase: number | null;
   images: ProductImageInput[];
 }
 
@@ -154,7 +191,15 @@ export function toProductInput(
     colors: [...new Set(v.colors)],
     isVisible: v.isVisible,
     featured: v.featured,
-    sizes: v.sizes,
+    sizes: v.sizes.map((s) => ({
+      label: s.label,
+      isAvailable: s.isAvailable,
+      stockQuantity: v.trackStock ? parseQuantity(s.quantity) : null,
+      stockBase: v.trackStock ? s.base : null,
+    })),
+    trackStock: v.trackStock,
+    stockQuantity: v.trackStock && v.sizes.length === 0 ? parseQuantity(v.quantity) : null,
+    stockBase: v.trackStock && v.sizes.length === 0 ? v.quantityBase : null,
     images: v.images,
   };
 }
@@ -176,6 +221,14 @@ export function productValuesFromFormData(fd: FormData): unknown {
     isVisible: fd.get("isVisible") === "on",
     featured: fd.get("featured") === "on",
     sizes: jsonField(fd, "sizes", []),
+    trackStock: fd.get("trackStock") === "on",
+    quantity: formString(fd, "quantity"),
+    quantityBase: baseField(fd.get("quantityBase")),
     images: jsonField(fd, "images", []),
   };
+}
+
+function baseField(value: FormDataEntryValue | null): number | null {
+  if (typeof value !== "string" || !/^\d{1,5}$/.test(value)) return null;
+  return Number(value);
 }

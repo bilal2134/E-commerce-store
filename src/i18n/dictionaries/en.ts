@@ -166,6 +166,8 @@ export const en = {
     sizeEu: "Size (EU)",
     chooseSize: "Choose your size to continue.",
     soldOut: "(sold out)",
+    onlyLeft: (n: number) => `Only ${n} left`,
+    onlyLeftInSize: (n: number, size: string) => `Only ${n} left in size ${size}`,
     orderOnWhatsapp: "Order on WhatsApp",
     preorderOnWhatsapp: "Preorder on WhatsApp",
     order: "Order",

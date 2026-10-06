@@ -7,12 +7,19 @@
  * Product photos are generated category illustrations labelled "Sample photo".
  * SEED_PLACEHOLDERS=0 skips the extra placeholder content (used by E2E).
  */
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import sharp from "sharp";
 import { COLOR_SWATCHES, FOOTWEAR_SIZES, type Color } from "../src/domain/catalog";
 import { processAndStoreImage } from "../src/server/images/pipeline";
 import * as s from "../src/server/db/schema";
-import { SEED_CATEGORIES, SEED_PRODUCTS, SEED_SIZE_CHART } from "./seed-data";
+import {
+  SEED_CATEGORIES,
+  SEED_PRODUCTS,
+  SEED_SIZE_CHART,
+  SEED_STOCK,
+  SEED_STOCK_PER_SIZE,
+  type SeedProduct,
+} from "./seed-data";
 import { CATEGORY_ILLUSTRATION, illustrationSvg, type IllustrationKind } from "./lib/illustrations";
 import { connect, scriptStorage } from "./lib/script-db";
 import { ensureAdmin } from "./lib/admin";
@@ -140,6 +147,9 @@ async function main() {
         pricePkr: p.price,
         salePricePkr: p.sale ?? null,
         stockStatus: p.stock ?? "in_stock",
+        // Preorders aren't counted; sized products get the sum of their sizes below.
+        stockQuantity:
+          p.stock === "preorder" ? null : p.stock === "out_of_stock" ? 0 : (p.stockCount ?? SEED_STOCK),
         badge: p.badge ?? null,
         collabPartner: p.collab ? "fairycoreforher" : null,
         colors: p.colors,
@@ -157,9 +167,16 @@ async function main() {
           productId: row!.id,
           label,
           position,
-          isAvailable: !(p.soldOutSizes ?? []).includes(label),
+          isAvailable: sizeCount(p, label) !== 0 && !(p.soldOutSizes ?? []).includes(label),
+          stockQuantity: sizeCount(p, label),
         })),
       );
+      if (p.stock !== "preorder") {
+        await db
+          .update(s.products)
+          .set({ stockQuantity: FOOTWEAR_SIZES.reduce((sum, label) => sum + (sizeCount(p, label) ?? 0), 0) })
+          .where(eq(s.products.id, row!.id));
+      }
     }
 
     for (let position = 0; position < 2; position++) {
@@ -616,4 +633,11 @@ async function seedPlaceholderContent(db: SeedDb, storage: SeedStorage, productI
   console.log(
     "Placeholder content: banner, 6 Instagram posts, 6 reviews, 8 orders, payment FAQ, brand story.",
   );
+}
+
+/** Sample pairs in one size: none when sold out, not counted for preorders. */
+function sizeCount(p: SeedProduct, label: string): number | null {
+  if (p.stock === "preorder") return null;
+  if (p.stock === "out_of_stock" || (p.soldOutSizes ?? []).includes(label)) return 0;
+  return p.stockCounts?.[label] ?? SEED_STOCK_PER_SIZE;
 }

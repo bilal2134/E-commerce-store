@@ -134,6 +134,7 @@ export function OrderPanel({
     }
   }
 
+  const selectedRemaining = product.sizes.find((s) => s.label === size)?.remaining ?? null;
   const dmHandles = [instagramHandle, product.collabPartner].filter((h): h is string => Boolean(h));
   const price = priceInfo(product.pricePkr, product.salePricePkr);
 
@@ -146,6 +147,11 @@ export function OrderPanel({
               {t.product.sizeEu}
               {size ? <span className="font-normal text-ink-soft">: {size}</span> : null}
             </span>
+            {size && selectedRemaining !== null ? (
+              <span className="text-sm font-semibold text-warning">
+                {t.product.onlyLeftInSize(selectedRemaining, size)}
+              </span>
+            ) : null}
           </legend>
           <div className="mt-3 grid grid-cols-6 gap-2">
             {product.sizes.map((s) => (

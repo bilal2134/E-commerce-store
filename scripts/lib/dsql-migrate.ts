@@ -1,9 +1,10 @@
 /**
  * Applies drizzle/dsql/*.sql (ADR 0014). Aurora DSQL allows one DDL statement
- * per transaction and builds indexes asynchronously, so every statement runs
- * on its own (autocommit) and each CREATE INDEX ASYNC job is awaited with
- * sys.wait_for_job before continuing. Statements use IF NOT EXISTS, so a run
- * that stopped halfway can simply be repeated.
+ * per transaction and builds indexes and validates constraints asynchronously,
+ * so every statement runs on its own (autocommit) and each ASYNC job is
+ * awaited with sys.wait_for_job before continuing. Statements use IF NOT
+ * EXISTS (or tolerate an existing constraint), so a run that stopped halfway
+ * can simply be repeated.
  *
  * `target: "postgres"` applies the same files to plain PostgreSQL (ASYNC
  * removed); tests use it to prove the DSQL schema matches the Drizzle one.
@@ -43,18 +44,28 @@ export async function applyDsqlMigrations(sql: postgres.Sql, opts: ApplyOptions)
     if (done.has(file)) continue;
     log(`applying ${file}`);
     for (const statement of splitStatements(fs.readFileSync(path.join(dir, file), "utf8"))) {
-      const isAsyncIndex = /\bINDEX\s+ASYNC\b/i.test(statement);
-      const text = opts.target === "postgres" ? statement.replace(/\bINDEX\s+ASYNC\b/i, "INDEX") : statement;
-      const rows = await sql.unsafe<{ job_id?: string }[]>(text);
+      // CREATE INDEX ASYNC and ALTER TABLE ASYNC … VALIDATE CONSTRAINT run as DSQL jobs.
+      const isAsync = /\b(INDEX|TABLE)\s+ASYNC\b/i.test(statement);
+      const text =
+        opts.target === "postgres" ? statement.replace(/\b(INDEX|TABLE)\s+ASYNC\b/i, "$1") : statement;
+      let rows: { job_id?: string }[];
+      try {
+        rows = await sql.unsafe<{ job_id?: string }[]>(text);
+      } catch (err) {
+        // ADD CONSTRAINT has no IF NOT EXISTS: on a re-run after a partial
+        // failure, an existing constraint (42710) means the step already ran.
+        if (/\bADD\s+CONSTRAINT\b/i.test(statement) && (err as { code?: string }).code === "42710") continue;
+        throw err;
+      }
       const jobId = rows[0]?.job_id;
-      if (opts.target === "dsql" && isAsyncIndex && jobId) {
+      if (opts.target === "dsql" && isAsync && jobId) {
         // A procedure in DSQL: blocks until the index build finishes or fails.
         await sql.unsafe(`CALL sys.wait_for_job('${jobId.replace(/[^a-z0-9]/gi, "")}')`);
         const [job] = await sql<{ status: string; details: string | null }[]>`
           select status, details from sys.jobs where job_id = ${jobId}`;
         if (job && job.status !== "completed") {
           throw new Error(
-            `Index job ${jobId} ${job.status}: ${job.details ?? ""} (${statement.split("\n")[0]})`,
+            `DDL job ${jobId} ${job.status}: ${job.details ?? ""} (${statement.split("\n")[0]})`,
           );
         }
       }

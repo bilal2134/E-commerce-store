@@ -72,7 +72,10 @@ describe("Aurora DSQL baseline (drizzle/dsql)", () => {
   });
 
   it("matches the Drizzle-migrated schema exactly", async () => {
-    expect(await applyDsqlMigrations(dsqlDb, { target: "postgres" })).toEqual(["0000_baseline.sql"]);
+    expect(await applyDsqlMigrations(dsqlDb, { target: "postgres" })).toEqual([
+      "0000_baseline.sql",
+      "0001_stock_quantities.sql",
+    ]);
     const [fromDrizzle, fromDsql] = await Promise.all([describeSchema(drizzleDb), describeSchema(dsqlDb)]);
     expect(fromDsql.columns).toEqual(fromDrizzle.columns);
     expect(fromDsql.constraints).toEqual(fromDrizzle.constraints);

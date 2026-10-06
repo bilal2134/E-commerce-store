@@ -161,9 +161,9 @@ describe("fetchVisibleProductBySlug", () => {
     expect(detail?.image).toEqual(detail?.images[0]);
     expect(detail?.hoverImage).toEqual(detail?.images[1]);
     expect(detail?.sizes).toEqual([
-      { label: "38", isAvailable: true },
-      { label: "39", isAvailable: false },
-      { label: "40", isAvailable: true },
+      { label: "38", isAvailable: true, remaining: null },
+      { label: "39", isAvailable: false, remaining: null },
+      { label: "40", isAvailable: true, remaining: null },
     ]);
   });
 });

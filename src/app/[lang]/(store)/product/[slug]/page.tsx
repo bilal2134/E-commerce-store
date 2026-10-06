@@ -145,14 +145,18 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/product
               />
               <p
                 className={
-                  product.stockStatus === "in_stock"
-                    ? "mt-2 text-sm font-medium text-success"
-                    : product.stockStatus === "preorder"
-                      ? "mt-2 text-sm font-medium text-warning"
-                      : "mt-2 text-sm font-semibold text-danger"
+                  product.remaining !== null
+                    ? "mt-2 text-sm font-semibold text-warning"
+                    : product.stockStatus === "in_stock"
+                      ? "mt-2 text-sm font-medium text-success"
+                      : product.stockStatus === "preorder"
+                        ? "mt-2 text-sm font-medium text-warning"
+                        : "mt-2 text-sm font-semibold text-danger"
                 }
               >
-                {t.stock[product.stockStatus]}
+                {product.remaining !== null
+                  ? t.product.onlyLeft(product.remaining)
+                  : t.stock[product.stockStatus]}
               </p>
 
               <SaveButton slug={product.slug} name={product.name} variant="page" className="mt-4" />

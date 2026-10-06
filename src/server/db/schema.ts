@@ -86,6 +86,8 @@ export const products = pgTable(
     pricePkr: integer("price_pkr").notNull(),
     salePricePkr: integer("sale_price_pkr"),
     stockStatus: text("stock_status").$type<(typeof STOCK_STATUSES)[number]>().notNull().default("in_stock"),
+    /** Units in stock; null = not tracked (manual status). Sized products: sum of their sizes. */
+    stockQuantity: integer("stock_quantity"),
     badge: text("badge").$type<(typeof BADGES)[number]>(),
     /** Instagram handle of the collaboration partner, e.g. "fairycoreforher". */
     collabPartner: text("collab_partner"),
@@ -114,6 +116,7 @@ export const products = pgTable(
       sql`${t.salePricePkr} is null or (${t.salePricePkr} > 0 and ${t.salePricePkr} < ${t.pricePkr})`,
     ),
     check("products_stock_status_valid", inList("stock_status", STOCK_STATUSES)),
+    check("products_stock_quantity_non_negative", sql`${t.stockQuantity} is null or ${t.stockQuantity} >= 0`),
     check("products_badge_valid", sql`badge is null or ${inList("badge", BADGES)}`),
     check(
       "products_colors_valid",
@@ -161,10 +164,16 @@ export const productSizes = pgTable(
     label: text("label").notNull(),
     position: integer("position").notNull().default(0),
     isAvailable: boolean("is_available").notNull().default(true),
+    /** Units in this size when the product tracks stock (is_available then follows it). */
+    stockQuantity: integer("stock_quantity"),
   },
   (t) => [
     primaryKey({ columns: [t.productId, t.label] }),
     check("product_sizes_label_not_blank", sql`length(trim(${t.label})) > 0`),
+    check(
+      "product_sizes_stock_quantity_non_negative",
+      sql`${t.stockQuantity} is null or ${t.stockQuantity} >= 0`,
+    ),
   ],
 );
 
@@ -245,6 +254,8 @@ export const orderItems = pgTable(
     size: text("size"),
     quantity: integer("quantity").notNull().default(1),
     unitPricePkr: integer("unit_price_pkr").notNull(),
+    /** True while this line holds stock (taken when logged, given back on cancel). Null on older rows = false. */
+    stockDeducted: boolean("stock_deducted").default(false),
   },
   (t) => [
     index("order_items_order_idx").on(t.orderId),

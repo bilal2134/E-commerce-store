@@ -8,6 +8,7 @@ import { OrderStatusPill, PageHeader, Panel, EmptyState } from "@/components/adm
 import { formatPkr } from "@/domain/money";
 import { getDashboard } from "@/server/admin/dashboard";
 import { getInsights } from "@/server/admin/insights";
+import { countLowStock } from "@/server/admin/stock";
 import { InsightsPanel } from "./_components/insights-panel";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/server/db/client";
@@ -18,7 +19,11 @@ export const instant = false;
 
 export default async function DashboardPage() {
   await requireAdmin();
-  const [data, insights] = await Promise.all([getDashboard(db()), getInsights(db())]);
+  const [data, insights, lowStock] = await Promise.all([
+    getDashboard(db()),
+    getInsights(db()),
+    countLowStock(db()),
+  ]);
   const open = data.checklist.filter((c) => !c.done);
 
   const stats: { label: string; value: number; href: Route }[] = [
@@ -33,7 +38,7 @@ export default async function DashboardPage() {
       value: data.totals.outOfStock,
       href: "/admin/products?stock=out_of_stock" as Route,
     },
-    { label: "Preorder", value: data.totals.preorder, href: "/admin/products?stock=preorder" as Route },
+    { label: "Low on stock", value: lowStock, href: "/admin/stock?filter=low" as Route },
   ];
 
   return (

@@ -12,7 +12,7 @@ import { fail, type ActionResult } from "@/domain/validation/result";
 import { changeOrderStatus, createManualOrder } from "@/server/admin/orders";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/server/db/client";
-import { refreshAfterWrite, toFailure } from "../../_lib/mutations";
+import { refreshAfterWrite, TAGS, toFailure } from "../../_lib/mutations";
 
 export async function createManualOrderAction(
   _prev: ActionResult | null,
@@ -28,7 +28,8 @@ export async function createManualOrderAction(
   } catch (err) {
     return toFailure(err);
   }
-  refreshAfterWrite();
+  // Orders move stock, which the storefront shows.
+  refreshAfterWrite(TAGS.catalog);
   redirect(`/admin/orders/${id}?created=1`);
 }
 
@@ -48,6 +49,7 @@ export async function changeOrderStatusAction(
   } catch (err) {
     return toFailure(err);
   }
-  refreshAfterWrite();
+  // Orders move stock, which the storefront shows.
+  refreshAfterWrite(TAGS.catalog);
   return { ok: true, message: "Order status updated" };
 }

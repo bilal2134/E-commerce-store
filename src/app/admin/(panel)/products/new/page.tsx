@@ -39,6 +39,9 @@ export default async function NewProductPage() {
           isVisible: false,
           featured: false,
           sizes: [],
+          trackStock: true,
+          quantity: "",
+          quantityBase: null,
         }}
         initialImages={[]}
       />

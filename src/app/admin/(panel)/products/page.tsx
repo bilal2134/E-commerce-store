@@ -54,6 +54,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     pricePkr: r.pricePkr,
     salePricePkr: r.salePricePkr,
     stockStatus: r.stockStatus,
+    stockQuantity: r.stockQuantity,
     badge: r.badge ? (BADGE_LABELS[r.badge as keyof typeof BADGE_LABELS] ?? r.badge) : null,
     isVisible: r.isVisible,
     featured: r.featuredRank !== null,

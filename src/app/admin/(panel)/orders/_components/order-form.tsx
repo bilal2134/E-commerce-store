@@ -19,7 +19,13 @@ interface ProductOption {
   name: string;
   currentPrice: number;
   sizes: string[];
+  /** Units left; null when stock isn't counted. */
+  stockLeft: number | null;
+  sizeStockLeft: Record<string, number> | null;
 }
+
+const leftLabel = (n: number | undefined | null) =>
+  n === undefined || n === null ? "" : n === 0 ? " · sold out" : ` · ${n} left`;
 
 export function OrderForm({ products }: { products: ProductOption[] }) {
   const searchId = useId();
@@ -195,6 +201,7 @@ export function OrderForm({ products }: { products: ProductOption[] }) {
                 {matches.map((p) => (
                   <option key={p.id} value={p.id} className="min-h-9 py-1.5">
                     {p.name} ({p.code}) · {formatPkr(p.currentPrice)}
+                    {p.sizeStockLeft ? "" : leftLabel(p.stockLeft)}
                   </option>
                 ))}
               </Select>
@@ -214,6 +221,7 @@ export function OrderForm({ products }: { products: ProductOption[] }) {
                   {product?.sizes.map((s) => (
                     <option key={s} value={s}>
                       {s}
+                      {leftLabel(product.sizeStockLeft?.[s])}
                     </option>
                   ))}
                 </Select>

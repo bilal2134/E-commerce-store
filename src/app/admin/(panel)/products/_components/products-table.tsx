@@ -7,7 +7,7 @@ import { EditIcon, TrashIcon } from "@/components/ui/icons";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { StatusMessage } from "@/components/admin/status-message";
-import { Thumb } from "@/components/admin/ui";
+import { StockPill, Thumb } from "@/components/admin/ui";
 import { STOCK_STATUS_LABELS, STOCK_STATUSES, type StockStatus } from "@/domain/catalog";
 import { formatPkr } from "@/domain/money";
 import type { ActionResult } from "@/domain/validation/result";
@@ -22,6 +22,7 @@ export interface ProductRowView {
   pricePkr: number;
   salePricePkr: number | null;
   stockStatus: StockStatus;
+  stockQuantity: number | null;
   badge: string | null;
   isVisible: boolean;
   featured: boolean;
@@ -90,6 +91,19 @@ export function ProductsTable({ rows, empty }: { rows: ProductRowView[]; empty?:
     ) : (
       <span className="font-medium tabular-nums">{formatPkr(row.pricePkr)}</span>
     );
+
+  // Counted products: status follows the count; quantities change on the Stock page.
+  const stockCount = (row: ProductRowView) => (
+    <div className="flex flex-col items-start gap-1">
+      <StockPill status={row.stockStatus} />
+      <Link
+        href={`/admin/stock?q=${encodeURIComponent(row.code)}`}
+        className="text-xs font-medium text-ink-soft tabular-nums underline-offset-4 hover:text-cherry hover:underline"
+      >
+        {row.stockQuantity} left<span className="sr-only"> of {row.name}, change stock</span>
+      </Link>
+    </div>
+  );
 
   const actions = (row: ProductRowView) => (
     <div className="flex items-center gap-1">
@@ -176,19 +190,23 @@ export function ProductsTable({ rows, empty }: { rows: ProductRowView[]; empty?:
                     </td>
                     <td className="px-3 py-3">{price(row)}</td>
                     <td className="px-3 py-3">
-                      <Select
-                        aria-label={`Stock status for ${row.name}`}
-                        value={row.stockStatus}
-                        disabled={busyId === row.id}
-                        onChange={(e) => changeStock(row, e.target.value as StockStatus)}
-                        className="min-w-36"
-                      >
-                        {STOCK_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {STOCK_STATUS_LABELS[s]}
-                          </option>
-                        ))}
-                      </Select>
+                      {row.stockQuantity !== null ? (
+                        stockCount(row)
+                      ) : (
+                        <Select
+                          aria-label={`Stock status for ${row.name}`}
+                          value={row.stockStatus}
+                          disabled={busyId === row.id}
+                          onChange={(e) => changeStock(row, e.target.value as StockStatus)}
+                          className="min-w-36"
+                        >
+                          {STOCK_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {STOCK_STATUS_LABELS[s]}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <Switch
@@ -236,19 +254,23 @@ export function ProductsTable({ rows, empty }: { rows: ProductRowView[]; empty?:
                       aria-label={`Visible on site: ${row.name}`}
                     />
                   </label>
-                  <Select
-                    aria-label={`Stock status for ${row.name}`}
-                    value={row.stockStatus}
-                    disabled={busyId === row.id}
-                    onChange={(e) => changeStock(row, e.target.value as StockStatus)}
-                    className="w-40"
-                  >
-                    {STOCK_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {STOCK_STATUS_LABELS[s]}
-                      </option>
-                    ))}
-                  </Select>
+                  {row.stockQuantity !== null ? (
+                    stockCount(row)
+                  ) : (
+                    <Select
+                      aria-label={`Stock status for ${row.name}`}
+                      value={row.stockStatus}
+                      disabled={busyId === row.id}
+                      onChange={(e) => changeStock(row, e.target.value as StockStatus)}
+                      className="w-40"
+                    >
+                      {STOCK_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {STOCK_STATUS_LABELS[s]}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                 </div>
                 <div className="mt-2">{actions(row)}</div>
               </li>
