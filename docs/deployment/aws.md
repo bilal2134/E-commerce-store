@@ -126,6 +126,8 @@ This creates the `usba_app` database role (data access only, no schema changes) 
 
 5. **Point the domain at CloudFront**: in Cloudflare, replace the apex record and `www` with CNAMEs to `<id>.cloudfront.net`, **DNS only** (Cloudflare flattens the apex CNAME). `www` redirects to the apex.
 
+**Certificate fails with `CAA_ERROR`** when a host still points at another provider (for example `www` → `shops.myshopify.com`): that provider's CAA rules are checked. Point the host at CloudFront (or away from the provider) first, then request a new certificate; the validation records stay the same.
+
 Keep the records DNS only: CloudFront terminates HTTPS with the ACM certificate, and proxying through Cloudflare as well would double-cache pages and break the instant admin updates.
 
 ## 7. Check it works
