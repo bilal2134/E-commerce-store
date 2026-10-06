@@ -22,8 +22,13 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: baseOpenGraph(locale, t),
     twitter: { card: "summary_large_image" },
     formatDetection: { telephone: false },
+    // Search engine ownership checks (public tokens, shown in the HTML anyway).
+    verification: { other: { "msvalidate.01": BING_SITE_VERIFICATION } },
   };
 }
+
+/** Bing Webmaster Tools, usbaofficial.com.pk (owner's account, 2026-10-07). */
+const BING_SITE_VERIFICATION = "02DC62761D7587701E39865FD4F3C91C";
 
 export const viewport: Viewport = {
   themeColor: "#fbf6f7",
