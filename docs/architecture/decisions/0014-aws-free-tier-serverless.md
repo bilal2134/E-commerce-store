@@ -8,19 +8,24 @@ The owner (AWS certified) asked for a fully free deployment with no feature comp
 
 ## Decision
 
-Run the existing Next.js app on AWS always-free services, region ap-south-1 (Mumbai):
+Run the existing Next.js app on AWS always-free services, region ap-southeast-2 (Sydney), with DNS on Cloudflare's free plan:
 
-| Concern                 | Service                                                                     | Always-free allowance used                                                                 |
-| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| CDN, TLS, WAF, DNS      | CloudFront **flat-rate Free plan** (subscribed in the console)              | $0, no overage charges; covers WAF, certificate, one Route 53 zone, 5 GB S3 storage credit |
-| App                     | Lambda (Node 22, x86_64, 1 GB) behind a Function URL, built with OpenNext 4 | 1M requests, 400k GB-s                                                                     |
-| Stale-page regeneration | SQS FIFO + revalidation Lambda                                              | 1M requests                                                                                |
-| Next tag cache          | DynamoDB, provisioned 5/5                                                   | 25 RCU/WCU, 25 GB                                                                          |
-| Database                | Aurora DSQL (PostgreSQL-compatible)                                         | 100k DPUs + 1 GB per month                                                                 |
-| Media and build assets  | One private S3 bucket: `_assets/`, `_cache/`, `media/`                      | covered by the plan's 5 GB credit                                                          |
-| Logs                    | CloudWatch Logs, 1-week retention                                           | 5 GB                                                                                       |
+| Concern                 | Service                                                                     | Always-free allowance used                      |
+| ----------------------- | --------------------------------------------------------------------------- | ----------------------------------------------- |
+| CDN, TLS                | CloudFront (pay-as-you-go) + ACM certificate in us-east-1                   | 1 TB transfer, 10M requests a month; ACM free   |
+| DNS                     | Cloudflare Free, records DNS only                                           | $0 (a Route 53 zone would be $0.50 a month)     |
+| App                     | Lambda (Node 22, x86_64, 1 GB) behind a Function URL, built with OpenNext 4 | 1M requests, 400k GB-s                          |
+| Stale-page regeneration | SQS FIFO + revalidation Lambda                                              | 1M requests                                     |
+| Next tag cache          | DynamoDB, provisioned 5/5                                                   | 25 RCU/WCU, 25 GB                               |
+| Database                | Aurora DSQL (PostgreSQL-compatible)                                         | 100k DPUs + 1 GB per month                      |
+| Media and build assets  | One private S3 bucket: `_assets/`, `_cache/`, `media/`                      | not always-free: cents a month, paid by credits |
+| Logs                    | CloudWatch Logs, 1-week retention                                           | 5 GB                                            |
 
-Infrastructure is code (`infrastructure/aws/cdk`, stacks `UsbaEdge` in us-east-1 for the zone and certificate, `UsbaApp`, optional `UsbaCi` for GitHub OIDC). Nothing billable is created: no NAT gateway, public IPv4, load balancer, RDS, Secrets Manager, API Gateway, Lambda@Edge or provisioned concurrency. A $1 budget alerts on any spend (budget notifications are free).
+Infrastructure is code (`infrastructure/aws/cdk`: `UsbaData` for the database and bucket, `UsbaApp`, optional `UsbaCi` for GitHub OIDC, optional `UsbaEdge` for Route 53 on standard accounts). Nothing billable is created: no NAT gateway, public IPv4, load balancer, RDS, Secrets Manager, API Gateway, Lambda@Edge, WAF, Route 53 zone or provisioned concurrency. A $1 budget alerts on any spend, and CloudWatch alarms email the owner on Lambda errors, throttles and a growing regeneration backlog (budget notifications, the alarms and SNS email are within free allowances).
+
+### Why Sydney, Cloudflare DNS and no flat-rate plan
+
+The owner's account is an AWS Builder Experience **project account**. A service control policy limits it to the region chosen for the country (Pakistan → ap-southeast-2) plus global services, so CloudFormation can't run in us-east-1 (the original plan used Mumbai and a us-east-1 `UsbaEdge` stack). The certificate is therefore requested with the CLI (ACM in us-east-1 is allowed) and passed in as `USBA_CERTIFICATE_ARN`. The CloudFront flat-rate Free plan includes WAF, which project accounts can't attach. Without it, a Route 53 zone would cost $0.50 a month, so DNS moved to Cloudflare (free), with records set to DNS only so CloudFront stays the only cache and admin invalidations take effect immediately. CloudFront's always-free tier covers this traffic many times over. Project accounts pause at their spend limit instead of billing.
 
 ### Changes this required in the app
 
@@ -42,7 +47,7 @@ Infrastructure is code (`infrastructure/aws/cdk`, stacks `UsbaEdge` in us-east-1
 
 ## Consequences
 
-- Cost is $0 within the allowances above; the only metered leftovers are S3 request fees (fractions of a cent) covered by sign-up credits. New AWS accounts must move from the 6-month Free plan to the Paid plan to keep running (always-free tiers continue).
+- Cost is $0 within the allowances above, except S3 storage and requests (a few cents a month), which credits cover. The project account's spend limit pauses it rather than billing.
 - Cold starts (~1–2 s) only affect CloudFront misses and the admin.
 - DSQL limits future migrations: new columns can't be `NOT NULL` with a default in one step, constraints are added `NOT VALID`; write migrations for both `drizzle/` and `drizzle/dsql/` and keep the baseline test green.
 - Local development is unchanged (Postgres, RustFS, `pnpm dev`). The Docker image (ADR 0009) still works for Render/ECS if the owner ever prefers a server.

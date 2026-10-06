@@ -80,7 +80,7 @@ docs/                architecture, deployment, research, agent notes
 
 ## Deployment
 
-**Chosen setup: AWS free tier** (CloudFront Free plan, Lambda via OpenNext, Aurora DSQL, S3), $0 a month at this traffic. Step-by-step guide: [docs/deployment/aws.md](docs/deployment/aws.md); design and trade-offs: ADR 0014. Infrastructure code: `infrastructure/aws/cdk`; the Lambda bundle can be tested locally with `infrastructure/aws/local`.
+**Chosen setup: AWS free tier** (CloudFront, Lambda via OpenNext, Aurora DSQL, S3 in Sydney; DNS on Cloudflare), $0 a month at this traffic. Step-by-step guide: [docs/deployment/aws.md](docs/deployment/aws.md); design and trade-offs: ADR 0014. Infrastructure code: `infrastructure/aws/cdk`; the Lambda bundle can be tested locally with `infrastructure/aws/local`.
 
 The Docker image (`Dockerfile`, Next standalone) still works for a conventional server (Render, ECS); see [docs/deployment/current.md](docs/deployment/current.md). Either way the production build queries the database, so the database and S3/MEDIA variables must be present at build time.
 

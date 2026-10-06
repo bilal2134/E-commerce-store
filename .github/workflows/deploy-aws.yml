@@ -69,6 +69,7 @@ jobs:
         env:
           CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
           USBA_DOMAIN: ${{ vars.USBA_DOMAIN }}
+          USBA_CERTIFICATE_ARN: ${{ vars.USBA_CERTIFICATE_ARN }}
           USBA_SITE_URL: ${{ vars.SITE_URL }}
           USBA_ALERT_EMAIL: ${{ vars.USBA_ALERT_EMAIL }}
           ORIGIN_VERIFY_SECRET: ${{ secrets.ORIGIN_VERIFY_SECRET }}

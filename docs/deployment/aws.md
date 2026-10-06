@@ -1,33 +1,39 @@
 # Deploy to AWS for free
 
-This is the chosen production setup (ADR 0014). Everything runs on AWS always-free allowances in Mumbai (`ap-south-1`):
+This is the chosen production setup (ADR 0014). Everything runs on AWS always-free allowances in Sydney (`ap-southeast-2`); DNS is on Cloudflare's free plan:
 
-| Part                      | AWS service                         | Free allowance                               |
-| ------------------------- | ----------------------------------- | -------------------------------------------- |
-| CDN, HTTPS, firewall, DNS | CloudFront **Free plan**            | $0 a month, never any overage charge         |
-| Website and admin         | Lambda                              | 1M requests and 400,000 GB-seconds a month   |
-| Database                  | Aurora DSQL (PostgreSQL-compatible) | 100,000 DPUs and 1 GB a month                |
-| Photos and build files    | S3                                  | 5 GB storage credit from the CloudFront plan |
-| Page cache bookkeeping    | DynamoDB, SQS                       | 25 GB / 25 capacity units, 1M requests       |
+| Part                   | Service                             | Free allowance                             |
+| ---------------------- | ----------------------------------- | ------------------------------------------ |
+| CDN and HTTPS          | CloudFront + ACM certificate        | 1 TB transfer and 10M requests a month     |
+| Website and admin      | Lambda                              | 1M requests and 400,000 GB-seconds a month |
+| Database               | Aurora DSQL (PostgreSQL-compatible) | 100,000 DPUs and 1 GB a month              |
+| Page cache bookkeeping | DynamoDB, SQS                       | 25 GB / 25 capacity units, 1M requests     |
+| DNS                    | Cloudflare Free                     | $0, no Route 53 zone fee                   |
+| Photos and build files | S3                                  | not always-free: cents a month (see below) |
 
-For ~10k visitors a month you use a small fraction of each. The only metered leftovers are S3 request fees (fractions of a cent per month), covered by the account's sign-up credits. A budget emails you if anything is ever charged.
+For ~10k visitors a month you use a small fraction of each allowance. S3 is the only metered part: a few hundred MB of photos plus request fees come to a few cents a month, paid from the account's credits. A $1 budget emails you if anything is ever charged.
 
-Time needed: about an hour, plus waiting for the `.pk` nameserver change at PKNIC.
+Time needed: about an hour, plus waiting for PKNIC to publish the nameserver change.
 
 ## 0. Before you start
 
 Install on your computer:
 
-- [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) (on Windows without admin rights, extract the MSI with `msiexec /a` and use `aws.exe` from the extracted folder)
 - Node.js 22+ and pnpm 10 (already used for this project)
 - Docker Desktop (builds the Lambda bundle on Linux, needed on Windows)
 
-AWS account:
+AWS account. This guide uses an AWS **project account** (AWS Builder Experience). These accounts have two restrictions:
 
-1. Sign up through the AWS Builder Experience (no card needed to start; $100 credits).
-2. Turn on MFA for the root user and create an admin user in **IAM Identity Center**; use that user from now on.
-3. Log the CLI in: `aws configure sso` (choose region `ap-south-1`), then `aws sts get-caller-identity` should show your account.
-4. **Within 6 months, switch the account to the Paid plan** (Billing → Account plan). The Free plan ends after 6 months and AWS suspends the account; on the Paid plan the always-free allowances continue. Set the spend limit to the minimum ($20) as a safety net.
+- They are locked to one region. Pakistan gets Sydney. Global services (CloudFront, ACM in `us-east-1`, IAM, budgets) still work, but CloudFormation stacks can only be deployed in Sydney.
+- They don't bill past their spend limit; the project is paused instead.
+
+Steps:
+
+1. Log the CLI in: `aws login --region ap-southeast-2` (the sign-in region must be the project's region). Check with `aws sts get-caller-identity`.
+2. In AWS Settings → Projects, set the project's spend limit to the minimum as a safety net.
+
+A standard (non-project) account works too: set `USBA_REGION` to any region and optionally `USBA_ROUTE53=1` to let CDK create a Route 53 zone and certificate (`UsbaEdge` stack in `us-east-1`, $0.50 a month).
 
 ## 1. Create two secrets
 
@@ -36,117 +42,118 @@ openssl rand -hex 32   # ORIGIN_VERIFY_SECRET: proves requests came through Clou
 openssl rand -hex 32   # ANALYTICS_SALT: keys visitor counts and rate limits
 ```
 
-Keep both in your password manager. Export them in the terminal you deploy from (Git Bash shown; PowerShell uses `$env:NAME="..."`):
+Keep both in your password manager and in a git-ignored `.env.aws-deploy` in the repository root:
 
 ```bash
-export CDK_DEFAULT_ACCOUNT=<your 12-digit account id>
-export ORIGIN_VERIFY_SECRET=<first value>
-export ANALYTICS_SALT=<second value>
-export USBA_DOMAIN=<your domain, e.g. usba.pk>
-export USBA_ALERT_EMAIL=<email for the $0 budget alert>
+CDK_DEFAULT_ACCOUNT=<your 12-digit account id>
+ORIGIN_VERIFY_SECRET=<first value>
+ANALYTICS_SALT=<second value>
+USBA_ALERT_EMAIL=<email for budget and error alerts>
 ```
+
+Load it before each CDK command: `set -a; . ./.env.aws-deploy; set +a` (Git Bash).
 
 ## 2. Prepare CDK (once per account)
 
 ```bash
 cd infrastructure/aws/cdk
 pnpm install --ignore-workspace
-npx cdk bootstrap aws://$CDK_DEFAULT_ACCOUNT/ap-south-1 aws://$CDK_DEFAULT_ACCOUNT/us-east-1
+npx cdk bootstrap aws://$CDK_DEFAULT_ACCOUNT/ap-southeast-2
 ```
 
-## 3. Domain and HTTPS certificate
-
-```bash
-npx cdk deploy UsbaEdge
-```
-
-This creates the DNS zone and requests the certificate, then **waits** until the domain points to AWS. While it waits:
-
-1. Open Route 53 → Hosted zones → your domain, copy the four **NS** values (also printed later as `NameServers`).
-2. In the PKNIC panel, replace the domain's nameservers with those four.
-3. The deploy finishes once PKNIC publishes the change (minutes to a few hours).
-
-No domain yet? Skip this step, deploy the rest with `export USBA_SITE_URL=https://<id>.cloudfront.net` instead of `USBA_DOMAIN` (deploy once to learn the id, then again), and come back later.
-
-## 4. Database and storage
+## 3. Database and storage
 
 ```bash
 npx cdk deploy UsbaData
 ```
 
-Note the outputs `DatabaseEndpoint` and `BucketName`.
+Note the outputs `DatabaseEndpoint` and `BucketName`. Both are retained (and the stack is termination-protected) even if the stack is deleted.
 
-## 5. Schema, sample content and the owner account
+## 4. Schema, sample content and the owner account
 
-In the repository root, copy `infrastructure/aws/env.aws.example` to `.env.aws` (git-ignored) and fill in the endpoint, bucket, domain, `ANALYTICS_SALT` and the owner's email and password. Then:
+In the repository root, copy `infrastructure/aws/env.aws.example` to `.env.aws` (git-ignored) and fill in the endpoint, bucket, `ANALYTICS_SALT` and the owner's email and password. Until the domain works, `SITE_URL` and `MEDIA_BASE_URL` can be any placeholder; they are fixed in step 6. Then:
 
 ```bash
 pnpm aws:migrate   # creates the tables (waits for indexes)
-pnpm aws:seed      # optional: sample catalogue, clearly marked as samples
+SEED_ALLOW_PRODUCTION=1 pnpm aws:seed   # optional, empty database only: sample catalogue, clearly marked as samples
 pnpm aws:admin     # creates the owner login from ADMIN_EMAIL / ADMIN_PASSWORD
 ```
 
 After this, remove `ADMIN_PASSWORD` from `.env.aws`.
 
-## 6. Build the site
+## 5. Build and deploy the app
 
 ```bash
-pnpm aws:build
-```
-
-Builds in Docker (Linux, matching Lambda) and prerenders pages from the production database. Output: `dist/aws/`.
-
-## 7. Deploy the app
-
-```bash
+pnpm aws:build                       # Docker build (Linux, like Lambda); prerenders from the production database
 cd infrastructure/aws/cdk
-npx cdk deploy UsbaApp
+USBA_SITE_URL=https://example.invalid npx cdk deploy UsbaApp
 ```
 
-Note the output `ServerRoleArn`.
+Note the outputs `DistributionDomain` (`<id>.cloudfront.net`) and `ServerRoleArn`. Set `SITE_URL=https://<id>.cloudfront.net` and `MEDIA_BASE_URL=https://<id>.cloudfront.net/media` in `.env.aws`, then build and deploy again with `USBA_SITE_URL=https://<id>.cloudfront.net`. The site now works on the CloudFront address.
 
-## 8. Let the app use the database
+Then let the app use the database (from the repository root):
 
 ```bash
-cd ../../..
 pnpm aws:migrate -- --grant-app-role <ServerRoleArn>
 ```
 
-This creates the `usba_app` database role (data access only, no schema changes) and maps it to the Lambda's IAM role.
+This creates the `usba_app` database role (data access only, no schema changes) and maps it to the Lambda's IAM role. Confirm the alert email AWS sends to `USBA_ALERT_EMAIL` ("AWS Notification - Subscription Confirmation").
 
-## 9. Switch CloudFront to the Free plan (console, once)
+## 6. Domain (Cloudflare DNS) and HTTPS certificate
 
-1. CloudFront → Distributions → the USBA distribution → **Pricing plan** → choose **Free**. Accept the WAF protections it offers; they're included.
-2. In the same plan settings, **attach the Route 53 hosted zone** so the plan covers its monthly fee.
+1. **Certificate** (CloudFront needs it in `us-east-1`; ACM is allowed there for project accounts):
 
-Until this is done the distribution is on pay-as-you-go pricing (cents at this traffic), so do it right after the first deploy.
+   ```bash
+   aws acm request-certificate --region us-east-1 --domain-name <domain> \
+     --subject-alternative-names www.<domain> --validation-method DNS
+   aws acm describe-certificate --region us-east-1 --certificate-arn <arn> \
+     --query 'Certificate.DomainValidationOptions[].ResourceRecord'
+   ```
 
-## 10. Check it works
+   Put the ARN in `.env.aws-deploy` as `USBA_CERTIFICATE_ARN`.
 
-- `https://<domain>/api/health` returns `{"status":"ok"}`.
+2. **Cloudflare**: add the domain on the Free plan. Keep the imported records (the current website) and set them to **DNS only** (grey cloud). Add the two validation records from the step above as CNAMEs, also DNS only. Cloudflare shows two assigned nameservers.
+
+3. **PKNIC**: My Account → My Nameservers → add a nameserver set with Cloudflare's two names, then on the domain page choose Re-Assign to Nameservers and select that set. The old website keeps working, because Cloudflare serves the same records. PKNIC publishes the change within a few hours. Cloudflare then shows the domain as Active, and ACM changes the certificate to `ISSUED`.
+
+4. **Switch the site to the domain**: set `SITE_URL=https://<domain>` and `MEDIA_BASE_URL=https://<domain>/media` in `.env.aws`, then:
+
+   ```bash
+   pnpm aws:build
+   cd infrastructure/aws/cdk
+   USBA_DOMAIN=<domain> npx cdk deploy UsbaApp   # uses USBA_CERTIFICATE_ARN
+   ```
+
+5. **Point the domain at CloudFront**: in Cloudflare, replace the apex record and `www` with CNAMEs to `<id>.cloudfront.net`, **DNS only** (Cloudflare flattens the apex CNAME). `www` redirects to the apex.
+
+Keep the records DNS only: CloudFront terminates HTTPS with the ACM certificate, and proxying through Cloudflare as well would double-cache pages and break the instant admin updates.
+
+## 7. Check it works
+
+- `https://<domain>/api/health` returns `{"status":"ok"}`; `https://www.<domain>` redirects to `https://<domain>`.
 - `https://<domain>/admin` → sign in with the owner account; change something in Settings and see it on the homepage straight away.
 - Upload a product photo in the admin.
-- Billing → Budgets shows `usba-zero-spend`; Billing → Bills shows $0.00 at the end of the month.
+- Billing → Budgets shows `usba-zero-spend`; Billing → Bills stays at $0.00 (or a few cents of S3, covered by credits).
 
 ## Later deploys
 
-Manual: `pnpm aws:migrate` (if the schema changed), `pnpm aws:build`, then `npx cdk deploy UsbaApp`.
+Manual: `pnpm aws:migrate` (if the schema changed), `pnpm aws:build`, then `USBA_DOMAIN=<domain> npx cdk deploy UsbaApp`.
 
 Automatic from GitHub (optional): deploy once with `export USBA_GITHUB_REPO=<owner>/<repo>` to create the `UsbaCi` stack, then in the GitHub repository settings add:
 
-- Variables: `AWS_DEPLOY_ROLE_ARN` (UsbaCi output), `AWS_ACCOUNT_ID`, `DSQL_ENDPOINT`, `S3_BUCKET`, `SITE_URL`, `USBA_DOMAIN`, `USBA_ALERT_EMAIL`
+- Variables: `AWS_DEPLOY_ROLE_ARN` (UsbaCi output), `AWS_ACCOUNT_ID`, `DSQL_ENDPOINT`, `S3_BUCKET`, `SITE_URL`, `USBA_DOMAIN`, `USBA_CERTIFICATE_ARN`, `USBA_ALERT_EMAIL`
 - Secrets: `ORIGIN_VERIFY_SECRET`, `ANALYTICS_SALT`
 
 Every push to `main` then runs `.github/workflows/deploy-aws.yml` (migrate → build → deploy). It does nothing until `AWS_DEPLOY_ROLE_ARN` is set.
 
 ## Staying at $0
 
-The stack only creates free-tier resources. If you change it, avoid: NAT gateways, EC2/load balancers or anything with a public IPv4 address, RDS, Secrets Manager (use SSM Parameter Store), API Gateway, Lambda@Edge, provisioned concurrency, CloudWatch log retention beyond a week, DynamoDB on-demand mode.
+The stack only creates free-tier resources. If you change it, avoid: NAT gateways, EC2/load balancers or anything with a public IPv4 address, RDS, Secrets Manager (use SSM Parameter Store), API Gateway, Lambda@Edge, provisioned concurrency, CloudWatch log retention beyond a week, DynamoDB on-demand mode, Route 53 hosted zones ($0.50 a month each), WAF.
 
 ## How it fits together
 
 ```
-visitor ──HTTPS──▶ CloudFront (Free plan: WAF, cache, TLS)
+visitor ──DNS (Cloudflare, DNS only)──▶ CloudFront (cache, TLS with the ACM certificate)
                     ├─ /_next/*, /brand/*, /media/* ──▶ S3 (private, origin access control)
                     └─ everything else ──x-origin-verify──▶ Lambda Function URL (Next.js via OpenNext)
                                                             ├─ Aurora DSQL (IAM token login)
@@ -154,12 +161,13 @@ visitor ──HTTPS──▶ CloudFront (Free plan: WAF, cache, TLS)
                                                             └─ SQS ──▶ revalidation Lambda (stale pages)
 ```
 
-Admin saves refresh Next's cache (`updateTag`) and invalidate CloudFront (`/*`), so changes show immediately. Details and trade-offs: `docs/architecture/decisions/0014-aws-free-tier-serverless.md`.
+Admin saves refresh Next's cache (`updateTag`) and invalidate CloudFront (`/*`), so changes show immediately. Lambda errors and throttles, revalidation errors and a growing regeneration backlog raise CloudWatch alarms that email `USBA_ALERT_EMAIL`. Details and trade-offs: `docs/architecture/decisions/0014-aws-free-tier-serverless.md`.
 
 ## Troubleshooting
 
 - **403 on every page**: `ORIGIN_VERIFY_SECRET` differs between the CloudFront origin header and the Lambda; redeploy `UsbaApp` with one value.
-- **500 with "password authentication failed"/"access denied" in the logs**: step 8 wasn't run for the current `ServerRoleArn`.
+- **500 with "password authentication failed"/"access denied" in the logs**: the `--grant-app-role` step wasn't run for the current `ServerRoleArn`.
 - **Admin saves show "Something went wrong"**: check CloudWatch → Log groups → `UsbaApp-ServerLogs…`.
-- **`UsbaEdge` deploy hangs**: the PKNIC nameservers don't match the hosted zone's NS record yet.
+- **CloudFormation "explicit deny … service control policy"**: the project account only allows its own region; check `USBA_REGION` and that the CLI is logged in to `ap-southeast-2`.
+- **Certificate stays `PENDING_VALIDATION`**: PKNIC hasn't published the Cloudflare nameservers yet (`nslookup -type=NS <domain> 1.1.1.1`), or a validation CNAME is proxied (orange cloud) instead of DNS only.
 - **Test the Lambda bundle locally** (no AWS needed): see `infrastructure/aws/local/` (`harness.mjs` emulates CloudFront + the Function URL; the Playwright suite runs against it with `E2E_PORT`).
