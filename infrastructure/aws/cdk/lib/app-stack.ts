@@ -14,6 +14,10 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
@@ -297,6 +301,50 @@ export class AppStack extends Stack {
       distribution,
       distributionPaths: ["/*"],
     });
+
+    /* ---------------------------------------------------------------- */
+    /* Alarms (free tier: 10 alarms, 1,000 SNS emails a month)           */
+    /* ---------------------------------------------------------------- */
+
+    if (props.alertEmail) {
+      const alerts = new sns.Topic(this, "Alerts", { displayName: "USBA store alerts" });
+      alerts.addSubscription(new subscriptions.EmailSubscription(props.alertEmail));
+      const notify = new cwActions.SnsAction(alerts);
+      const alarm = (id: string, metric: cloudwatch.IMetric, description: string, threshold = 1) =>
+        new cloudwatch.Alarm(this, id, {
+          metric,
+          threshold,
+          evaluationPeriods: 1,
+          comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+          treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+          alarmDescription: description,
+        }).addAlarmAction(notify);
+      const fiveMinutes = { period: Duration.minutes(5), statistic: "Sum" };
+      alarm(
+        "ServerErrors",
+        server.metricErrors(fiveMinutes),
+        "The site's Lambda function failed (pages or admin may be showing errors). Check the ServerLogs log group.",
+      );
+      alarm(
+        "ServerThrottles",
+        server.metricThrottles(fiveMinutes),
+        "Requests were throttled: the account's Lambda concurrency limit was reached.",
+      );
+      alarm(
+        "RevalidatorErrors",
+        revalidation.metricErrors(fiveMinutes),
+        "Background page regeneration failed; pages may stay stale until the next visit or admin save.",
+      );
+      alarm(
+        "RevalidationBacklog",
+        revalidationQueue.metricApproximateAgeOfOldestMessage({
+          period: Duration.minutes(5),
+          statistic: "Maximum",
+        }),
+        "Stale-page regeneration requests have been waiting over 15 minutes.",
+        900,
+      );
+    }
 
     /* ---------------------------------------------------------------- */
     /* Cost guard                                                        */

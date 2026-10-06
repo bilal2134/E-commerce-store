@@ -18,7 +18,7 @@
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Annotations, App } from "aws-cdk-lib";
+import { Annotations, App, Tags } from "aws-cdk-lib";
 import { AppStack } from "../lib/app-stack.js";
 import { CiStack } from "../lib/ci-stack.js";
 import { DataStack } from "../lib/data-stack.js";
@@ -26,6 +26,9 @@ import { EdgeStack } from "../lib/edge-stack.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const app = new App();
+// Cost allocation and ownership on every resource.
+Tags.of(app).add("Project", "usba-store");
+Tags.of(app).add("Environment", "production");
 const account = process.env.CDK_DEFAULT_ACCOUNT;
 const region = process.env.USBA_REGION?.trim() || "ap-southeast-2";
 
@@ -76,10 +79,9 @@ const appStack = new AppStack(app, "UsbaApp", {
   alertEmail: process.env.USBA_ALERT_EMAIL?.trim() || undefined,
 });
 
-if (edge) {
-  // Strong cross-region references (the app stack reads the certificate and zone).
-  Annotations.of(appStack).acknowledgeWarning("@aws-cdk/core:crossStackReferencesDefaultStrong");
-}
+// Strong cross-stack references (the app stack reads the database, bucket and,
+// with Route 53, the certificate and zone): producers can't drop what's in use.
+Annotations.of(appStack).acknowledgeWarning("@aws-cdk/core:crossStackReferencesDefaultStrong");
 // The bucket is imported; DataStack's policy already grants CloudFront read access.
 Annotations.of(appStack).acknowledgeWarning("@aws-cdk/aws-cloudfront-origins:updateImportedBucketPolicyOac");
 
