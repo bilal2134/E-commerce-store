@@ -25,25 +25,32 @@ if (!url) {
   process.exit(1);
 }
 
-const sql = postgres(url, {
-  max: 1,
-  ssl: toPostgres ? false : "verify-full",
-  ...(toPostgres ? {} : { password: dsqlPassword(url) }),
-  onnotice: () => {},
-});
-
-try {
-  const applied = await applyDsqlMigrations(sql, {
-    target: toPostgres ? "postgres" : "dsql",
-    log: (m) => console.log(m),
+async function main(databaseUrl: string) {
+  const sql = postgres(databaseUrl, {
+    max: 1,
+    ssl: toPostgres ? false : "verify-full",
+    ...(toPostgres ? {} : { password: dsqlPassword(databaseUrl) }),
+    onnotice: () => {},
   });
-  console.log(applied.length ? `Applied ${applied.join(", ")}.` : "Schema already up to date.");
-  const roleArn = flag("--grant-app-role");
-  if (roleArn) {
-    const appUser = flag("--app-user") ?? "usba_app";
-    await grantAppRole(sql, appUser, roleArn);
-    console.log(`Role ${appUser} can now connect as ${roleArn}.`);
+
+  try {
+    const applied = await applyDsqlMigrations(sql, {
+      target: toPostgres ? "postgres" : "dsql",
+      log: (m) => console.log(m),
+    });
+    console.log(applied.length ? `Applied ${applied.join(", ")}.` : "Schema already up to date.");
+    const roleArn = flag("--grant-app-role");
+    if (roleArn) {
+      const appUser = flag("--app-user") ?? "usba_app";
+      await grantAppRole(sql, appUser, roleArn);
+      console.log(`Role ${appUser} can now connect as ${roleArn}.`);
+    }
+  } finally {
+    await sql.end();
   }
-} finally {
-  await sql.end();
 }
+
+main(url).catch((err: unknown) => {
+  console.error(err);
+  process.exit(1);
+});

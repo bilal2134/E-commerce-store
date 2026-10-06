@@ -61,3 +61,6 @@ next-env.d.ts
 # AWS CDK
 /infrastructure/aws/cdk/node_modules/
 /infrastructure/aws/cdk/cdk.out/
+
+# Playwright MCP browser session output
+/.playwright-mcp/

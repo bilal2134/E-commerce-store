@@ -12,3 +12,4 @@ dist
 infrastructure/aws/cdk/cdk.out
 infrastructure/aws/cdk/node_modules
 .tmp
+.playwright-mcp

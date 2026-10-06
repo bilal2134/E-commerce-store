@@ -48,8 +48,15 @@ export async function applyDsqlMigrations(sql: postgres.Sql, opts: ApplyOptions)
       const rows = await sql.unsafe<{ job_id?: string }[]>(text);
       const jobId = rows[0]?.job_id;
       if (opts.target === "dsql" && isAsyncIndex && jobId) {
-        const [result] = await sql<{ ok: boolean }[]>`select sys.wait_for_job(${jobId}) as ok`;
-        if (!result?.ok) throw new Error(`Index job ${jobId} failed for: ${statement.split("\n")[0]}`);
+        // A procedure in DSQL: blocks until the index build finishes or fails.
+        await sql.unsafe(`CALL sys.wait_for_job('${jobId.replace(/[^a-z0-9]/gi, "")}')`);
+        const [job] = await sql<{ status: string; details: string | null }[]>`
+          select status, details from sys.jobs where job_id = ${jobId}`;
+        if (job && job.status !== "completed") {
+          throw new Error(
+            `Index job ${jobId} ${job.status}: ${job.details ?? ""} (${statement.split("\n")[0]})`,
+          );
+        }
       }
     }
     await sql`insert into dsql_migrations (name) values (${file})`;
@@ -69,7 +76,11 @@ export async function grantAppRole(sql: postgres.Sql, appUser: string, iamRoleAr
   const [exists] = await sql`select 1 from pg_roles where rolname = ${appUser}`;
   if (!exists) await sql.unsafe(`CREATE ROLE ${appUser} WITH LOGIN`);
   await sql.unsafe(`AWS IAM GRANT ${appUser} TO '${iamRoleArn}'`);
-  await sql.unsafe(`GRANT USAGE ON SCHEMA public TO ${appUser}`);
+  // DSQL treats `public` as a system schema (usable by every role, like
+  // PostgreSQL 15+) and rejects grants on it with 0A000; elsewhere it's needed.
+  await sql.unsafe(`GRANT USAGE ON SCHEMA public TO ${appUser}`).catch((err: { code?: string }) => {
+    if (err.code !== "0A000") throw err;
+  });
   const tables = await sql<{ name: string }[]>`
     select tablename as name from pg_tables where schemaname = 'public' and tablename <> 'dsql_migrations'`;
   for (const { name } of tables) {

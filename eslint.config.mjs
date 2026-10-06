@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     // Project-specific
     "dist/**",
     ".tmp/**",
+    ".playwright-mcp/**",
     "infrastructure/aws/cdk/**",
     ".open-next/**",
     ".claude/**",

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from "aws-cdk-lib";
 import * as budgets from "aws-cdk-lib/aws-budgets";
-import type * as acm from "aws-cdk-lib/aws-certificatemanager";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -29,6 +29,8 @@ export interface AppStackProps extends StackProps {
   siteUrl: string;
   domain?: string;
   hostedZone?: route53.IHostedZone;
+  /** us-east-1 ACM certificate for the domain, requested outside CDK. */
+  certificateArn?: string;
   certificate?: acm.ICertificate;
   originSecret: string;
   analyticsSalt: string;
@@ -44,9 +46,9 @@ const DISTRIBUTION_ID_PARAMETER = "/usba/cdn-distribution-id";
  * - Lambda (1M requests, 400k GB-s), DynamoDB provisioned capacity (25 RCU/WCU),
  *   SQS (1M requests), Aurora DSQL (100k DPUs, 1 GB), CloudWatch Logs with
  *   1-week retention.
- * - CloudFront is subscribed to the flat-rate Free plan in the console after the
- *   first deploy; it then also covers WAF, the certificate, the Route 53 zone
- *   and 5 GB of S3 storage.
+ * - CloudFront: always-free 1 TB and 10M requests a month on standard pricing
+ *   (AWS "project" accounts can't attach WAF, so the flat-rate plan isn't used).
+ *   On a standard account it can be subscribed to the flat-rate Free plan.
  * - No NAT gateway, load balancer, public IPv4, RDS, Secrets Manager, API
  *   Gateway or Lambda@Edge.
  */
@@ -60,6 +62,11 @@ export class AppStack extends Stack {
     /* ---------------------------------------------------------------- */
 
     const { cluster } = props;
+    const certificate =
+      props.certificate ??
+      (props.certificateArn
+        ? acm.Certificate.fromCertificateArn(this, "Certificate", props.certificateArn)
+        : undefined);
     // Imported by name: DataStack's bucket policy already lets CloudFront read
     // it, so this stack never edits that policy (no cross-stack cycle).
     const bucket = s3.Bucket.fromBucketAttributes(this, "SiteBucket", {
@@ -237,9 +244,9 @@ export class AppStack extends Stack {
         "media/*": { ...staticBehavior, origin: mediaOrigin },
       },
       domainNames: props.domain ? [props.domain, `www.${props.domain}`] : undefined,
-      certificate: props.certificate,
+      certificate,
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
-      minimumProtocolVersion: props.certificate ? cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021 : undefined,
+      minimumProtocolVersion: certificate ? cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021 : undefined,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
     });
 

@@ -18,7 +18,7 @@ trap 'rm -f "$secret"' EXIT
 cat "$env_file" > "$secret"
 echo >> "$secret"
 aws configure export-credentials --format env-no-export >> "$secret"
-echo "AWS_REGION=ap-south-1" >> "$secret"
+echo "AWS_REGION=${USBA_REGION:-ap-southeast-2}" >> "$secret"
 
 rm -rf dist/aws
 DOCKER_BUILDKIT=1 docker build \
