@@ -43,7 +43,11 @@
       "@node-rs/argon2",
       "unrs-resolver",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "source-map-js": "^1.2.2",
+      "@esbuild-kit/core-utils>esbuild": "^0.25.12"
+    }
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.1146.0",

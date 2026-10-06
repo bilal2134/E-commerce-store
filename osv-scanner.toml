@@ -1,0 +1,9 @@
+# osv-scanner exceptions, reviewed by hand (.github/workflows/ci.yml).
+# Each entry expires so it is looked at again.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-12-31
+reason = """braces <= 3.0.3: stack overflow (DoS) on deeply nested brace patterns; no fixed release yet.
+Only reached through eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch, a dev-only
+lint path that expands our own config globs. Never bundled, never fed external input. Upgrade when fixed."""
