@@ -292,7 +292,7 @@ export class AppStack extends Stack {
       memoryLimit: 512,
     });
     // Prerendered pages for this build; one "/*" invalidation per deploy.
-    new s3deploy.BucketDeployment(this, "DeployCache", {
+    const deployCache = new s3deploy.BucketDeployment(this, "DeployCache", {
       sources: [s3deploy.Source.asset(bundle("cache"))],
       destinationBucket: bucket,
       destinationKeyPrefix: "_cache",
@@ -301,6 +301,9 @@ export class AppStack extends Stack {
       distribution,
       distributionPaths: ["/*"],
     });
+    // Invalidate only once the new server code is live; otherwise requests in
+    // between put the previous release's pages back into CloudFront.
+    deployCache.node.addDependency(server);
 
     /* ---------------------------------------------------------------- */
     /* Alarms (free tier: 10 alarms, 1,000 SNS emails a month)           */
