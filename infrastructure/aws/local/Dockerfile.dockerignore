@@ -1,0 +1,4 @@
+# Only the local OpenNext bundle and the harness are needed.
+*
+!dist/aws-local/**
+!infrastructure/aws/local/harness.mjs

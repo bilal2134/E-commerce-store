@@ -1,4 +1,6 @@
-# Deployment: recommended launch setup
+# Deployment: Docker on a server (alternative)
+
+> The chosen production setup is now the AWS free tier: see [aws.md](aws.md) and ADR 0014. This page remains for running the Docker image on a conventional host.
 
 Facts: docs/research/hosting.md (checked 2026-09-30). Price figures marked "secondary" there must be verified before purchase.
 

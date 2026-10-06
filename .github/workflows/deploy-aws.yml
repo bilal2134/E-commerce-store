@@ -1,0 +1,78 @@
+name: Deploy to AWS
+
+# Builds the OpenNext bundle and deploys the UsbaApp stack (ADR 0014,
+# docs/deployment/aws.md). Does nothing until the repository variable
+# AWS_DEPLOY_ROLE_ARN is set (output of the UsbaCi stack), so pushing this file
+# never deploys by itself.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # GitHub OIDC → AWS role, no stored AWS keys
+
+jobs:
+  deploy:
+    if: vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: production
+    env:
+      AWS_REGION: ap-south-1
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Build-time environment: pages are prerendered from the production
+      # database, read as DSQL admin with a short-lived IAM token.
+      NODE_ENV: production
+      SITE_URL: ${{ vars.SITE_URL }}
+      DATABASE_URL: postgres://admin@${{ vars.DSQL_ENDPOINT }}:5432/postgres
+      DATABASE_AUTH: dsql-iam
+      DATABASE_SSL: verify-full
+      DATABASE_POOL_MAX: "2"
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      S3_REGION: ap-south-1
+      S3_KEY_PREFIX: media/
+      MEDIA_BASE_URL: ${{ vars.SITE_URL }}/media
+      ANALYTICS_SALT: ${{ secrets.ANALYTICS_SALT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Migrate database (Aurora DSQL)
+        run: pnpm db:migrate:dsql
+
+      - name: Build (OpenNext for Lambda)
+        run: pnpm exec open-next build
+
+      - name: Package for CDK
+        run: bash scripts/aws/package-opennext.sh dist/aws
+
+      - name: Deploy UsbaApp
+        working-directory: infrastructure/aws/cdk
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+          USBA_DOMAIN: ${{ vars.USBA_DOMAIN }}
+          USBA_SITE_URL: ${{ vars.SITE_URL }}
+          USBA_ALERT_EMAIL: ${{ vars.USBA_ALERT_EMAIL }}
+          ORIGIN_VERIFY_SECRET: ${{ secrets.ORIGIN_VERIFY_SECRET }}
+          ANALYTICS_SALT: ${{ secrets.ANALYTICS_SALT }}
+        run: |
+          pnpm install --frozen-lockfile --ignore-workspace
+          npx cdk deploy UsbaApp --require-approval never --exclusively

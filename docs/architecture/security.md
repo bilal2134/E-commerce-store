@@ -52,6 +52,14 @@ First-party and cookie-free. `analytics_events` stores only: event type, optiona
 
 Server-only typed `env()`; no `NEXT_PUBLIC_*`; `.env*` in `.gitignore` (only `.env.example` is committed); `.dockerignore` excludes `.env*`. The Docker build receives its environment as a BuildKit secret mount (never an ARG/ENV, never in a layer); the Next standalone copy of `.env` is deleted in the same RUN step, verified by inspecting the image (no `.env`, no credential strings under `/app`). Use provider secret stores and rotate on suspicion. Logger redacts keys matching `pass|secret|token|authorization|cookie|session|key`. If a secret is committed, rotate it immediately.
 
+## AWS deployment (ADR 0014)
+
+- **Origin lock**: the Lambda Function URL is public because CloudFront origin access control can't sign browser POST bodies (Server Actions). CloudFront adds `x-origin-verify: <ORIGIN_VERIFY_SECRET>` to every origin request and `src/proxy.ts` (now matching every path except `/_next/*`) answers 403 without it, compared in constant time. OpenNext's revalidation requests are let in with the build's secret revalidation token instead. Direct calls therefore can't bypass the WAF, the cache or the client-IP header. Rotate the secret by redeploying `UsbaApp` with a new value.
+- **Client IP** comes from `CloudFront-Viewer-Address`, which CloudFront sets itself; the port is stripped so rate-limit keys don't change per connection.
+- **Least privilege**: the Lambda role can only `dsql:DbConnect` as `usba_app` (DML grants, no DDL), read/write `_cache/*` and `media/*` in one bucket, use its DynamoDB table and SQS queue, read one SSM parameter and create CloudFront invalidations. Migrations use the `admin` role from the deployer's own credentials. GitHub Actions (optional) assumes a role through OIDC: no stored AWS keys.
+- **Storage** is private (Block Public Access); CloudFront reads it with origin access control.
+- **Secrets** (`ORIGIN_VERIFY_SECRET`, `ANALYTICS_SALT`) are passed at deploy time from the deployer's environment or GitHub secrets and live only in the Lambda configuration; nothing is committed. Database passwords don't exist: DSQL logins are 15-minute IAM tokens.
+
 ## SQL injection
 
 All queries go through Drizzle (parameterised). Raw `sql` templates are used only for constants/expressions with bound parameters. Enumerations are enforced by CHECK constraints from `src/domain`.

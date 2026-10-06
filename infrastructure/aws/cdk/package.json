@@ -1,0 +1,22 @@
+{
+  "name": "usba-aws-infra",
+  "private": true,
+  "type": "module",
+  "description": "AWS CDK app for the USBA store (ADR 0014). See docs/deployment/aws.md.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.272.0",
+    "constructs": "10.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "aws-cdk": "2.1144.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

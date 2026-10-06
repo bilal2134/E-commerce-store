@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Packages OpenNext's .open-next/ into <out dir> (default dist/aws) for the CDK
-# stack in infrastructure/aws/cdk (ADR 0015). Run on Linux x86_64 after
+# stack in infrastructure/aws/cdk (ADR 0014). Run on Linux x86_64 after
 # `pnpm exec open-next build` (CI) or inside infrastructure/aws/opennext.Dockerfile.
 #
 # - Repoints Turbopack's hashed sharp alias at the Lambda build of sharp that
