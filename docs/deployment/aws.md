@@ -139,12 +139,25 @@ Keep the records DNS only: CloudFront terminates HTTPS with the ACM certificate,
 
 Manual: `pnpm aws:migrate` (if the schema changed), `pnpm aws:build`, then `USBA_DOMAIN=<domain> npx cdk deploy UsbaApp`.
 
-Automatic from GitHub (optional): deploy once with `export USBA_GITHUB_REPO=<owner>/<repo>` to create the `UsbaCi` stack, then in the GitHub repository settings add:
+Automatic from GitHub (optional): every push to `main` runs `.github/workflows/deploy-aws.yml` (migrate → build → deploy). It needs an AWS identity for GitHub, created by the `UsbaCi` stack:
 
-- Variables: `AWS_DEPLOY_ROLE_ARN` (UsbaCi output), `AWS_ACCOUNT_ID`, `DSQL_ENDPOINT`, `S3_BUCKET`, `SITE_URL`, `USBA_DOMAIN`, `USBA_CERTIFICATE_ARN`, `USBA_ALERT_EMAIL`
+- **Project account** (this setup): its service control policy blocks GitHub's OIDC identity provider, so `UsbaCi` creates a deploy user instead. It can only use the CDK deploy roles and connect to the database.
+
+  ```bash
+  USBA_GITHUB_REPO=<owner>/<repo> USBA_CI_AUTH=user npx cdk deploy UsbaCi --exclusively
+  aws iam create-access-key --user-name usba-github-deploy   # once; keep the secret only in GitHub
+  ```
+
+  GitHub secrets `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, plus the variable `AWS_DEPLOY_WITH_KEYS=true`. To rotate the key, create a new one, update the secrets, then delete the old key.
+
+- **Standard account**: `USBA_GITHUB_REPO=<owner>/<repo> npx cdk deploy UsbaCi --exclusively` creates an OIDC role (no stored keys); set the variable `AWS_DEPLOY_ROLE_ARN` to its output.
+
+Either way, also add in the repository settings (Settings → Secrets and variables → Actions):
+
+- Variables: `AWS_ACCOUNT_ID`, `DSQL_ENDPOINT`, `S3_BUCKET`, `SITE_URL`, `USBA_DOMAIN` and `USBA_CERTIFICATE_ARN` (empty until the domain works), `USBA_ALERT_EMAIL`
 - Secrets: `ORIGIN_VERIFY_SECRET`, `ANALYTICS_SALT`
 
-Every push to `main` then runs `.github/workflows/deploy-aws.yml` (migrate → build → deploy). It does nothing until `AWS_DEPLOY_ROLE_ARN` is set.
+The workflow does nothing until `AWS_DEPLOY_ROLE_ARN` or `AWS_DEPLOY_WITH_KEYS` is set.
 
 ## Staying at $0
 

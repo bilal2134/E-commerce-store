@@ -6,17 +6,40 @@ export interface CiStackProps extends StackProps {
   /** "owner/repo" allowed to deploy from its main branch. */
   githubRepo: string;
   clusterArn: string;
+  /**
+   * "oidc" (default): a role GitHub assumes through its OIDC provider, no
+   * stored keys. "user": an IAM user whose access key is kept as a GitHub
+   * secret, for AWS project accounts, whose service control policy blocks
+   * creating OIDC providers.
+   */
+  auth?: "oidc" | "user";
 }
 
 /**
- * Role assumed by .github/workflows/deploy-aws.yml through GitHub's OIDC
- * provider: no long-lived AWS keys in GitHub. It may only use the CDK
+ * Identity used by .github/workflows/deploy-aws.yml. It may only use the CDK
  * bootstrap roles (to deploy) and connect to the database as admin (to run
  * migrations and to prerender pages during the build).
  */
 export class CiStack extends Stack {
   constructor(scope: Construct, id: string, props: CiStackProps) {
     super(scope, id, props);
+    const statements = [
+      new iam.PolicyStatement({
+        actions: ["sts:AssumeRole"],
+        resources: [`arn:${this.partition}:iam::${this.account}:role/cdk-*`],
+      }),
+      new iam.PolicyStatement({ actions: ["dsql:DbConnectAdmin"], resources: [props.clusterArn] }),
+    ];
+
+    if (props.auth === "user") {
+      // The access key is created with the CLI (docs/deployment/aws.md), so
+      // the secret never appears in CloudFormation.
+      const user = new iam.User(this, "DeployUser", { userName: "usba-github-deploy" });
+      for (const s of statements) user.addToPolicy(s);
+      new CfnOutput(this, "DeployUserName", { value: user.userName });
+      return;
+    }
+
     const provider = new iam.OpenIdConnectProvider(this, "GitHub", {
       url: "https://token.actions.githubusercontent.com",
       clientIds: ["sts.amazonaws.com"],
@@ -30,15 +53,7 @@ export class CiStack extends Stack {
         },
       }),
     });
-    role.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["sts:AssumeRole"],
-        resources: [`arn:${this.partition}:iam::${this.account}:role/cdk-*`],
-      }),
-    );
-    role.addToPolicy(
-      new iam.PolicyStatement({ actions: ["dsql:DbConnectAdmin"], resources: [props.clusterArn] }),
-    );
+    for (const s of statements) role.addToPolicy(s);
     new CfnOutput(this, "DeployRoleArn", { value: role.roleArn });
   }
 }

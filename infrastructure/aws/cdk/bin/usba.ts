@@ -13,7 +13,8 @@
  *   ORIGIN_VERIFY_SECRET  >= 32 chars; CloudFront → Lambda shared secret
  *   ANALYTICS_SALT        secret for visitor hashes and stored IP keys
  *   USBA_ALERT_EMAIL      budget alert recipient (optional)
- *   USBA_GITHUB_REPO      "owner/repo" to create the GitHub Actions deploy role (optional)
+ *   USBA_GITHUB_REPO      "owner/repo" to create the GitHub Actions deploy identity (optional)
+ *   USBA_CI_AUTH=user     deploy user + access key instead of the OIDC role (project accounts)
  *   USBA_BUNDLE_DIR       OpenNext output (default <repo>/dist/aws)
  */
 import path from "node:path";
@@ -91,5 +92,6 @@ if (githubRepo) {
     env: { account, region },
     githubRepo,
     clusterArn: data.cluster.attrResourceArn,
+    auth: process.env.USBA_CI_AUTH === "user" ? "user" : "oidc",
   });
 }

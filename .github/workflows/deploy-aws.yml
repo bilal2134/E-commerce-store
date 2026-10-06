@@ -2,8 +2,9 @@ name: Deploy to AWS
 
 # Builds the OpenNext bundle and deploys the UsbaApp stack (ADR 0014,
 # docs/deployment/aws.md). Does nothing until the repository variable
-# AWS_DEPLOY_ROLE_ARN is set (output of the UsbaCi stack), so pushing this file
-# never deploys by itself.
+# AWS_DEPLOY_ROLE_ARN (OIDC role from the UsbaCi stack) or AWS_DEPLOY_WITH_KEYS
+# = "true" (deploy user's access key in secrets, for AWS project accounts) is
+# set, so pushing this file never deploys by itself.
 on:
   push:
     branches: [main]
@@ -15,11 +16,11 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write # GitHub OIDC → AWS role, no stored AWS keys
+  id-token: write # GitHub OIDC → AWS role (when AWS_DEPLOY_ROLE_ARN is used)
 
 jobs:
   deploy:
-    if: vars.AWS_DEPLOY_ROLE_ARN != ''
+    if: vars.AWS_DEPLOY_ROLE_ARN != '' || vars.AWS_DEPLOY_WITH_KEYS == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: production
@@ -50,16 +51,26 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: AWS login (OIDC role)
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-southeast-2
+
+      - name: AWS login (deploy user)
+        if: vars.AWS_DEPLOY_ROLE_ARN == ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
 
       - name: Migrate database (Aurora DSQL)
         run: pnpm db:migrate:dsql
 
       - name: Build (OpenNext for Lambda)
-        run: pnpm exec open-next build
+        run: mkdir -p public && pnpm exec open-next build
 
       - name: Package for CDK
         run: bash scripts/aws/package-opennext.sh dist/aws
