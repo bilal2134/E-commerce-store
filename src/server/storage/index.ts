@@ -16,6 +16,7 @@ export function storage(): ObjectStorage {
       secretAccessKey: e.S3_SECRET_ACCESS_KEY,
       forcePathStyle: e.S3_FORCE_PATH_STYLE,
       publicBaseUrl: e.MEDIA_BASE_URL,
+      keyPrefix: e.S3_KEY_PREFIX,
     });
   }
   return instance;

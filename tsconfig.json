@@ -35,5 +35,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", ".next", "playwright-report", "test-results"]
+  "exclude": ["node_modules", ".next", "playwright-report", "test-results", "dist", "infrastructure/aws/cdk"]
 }

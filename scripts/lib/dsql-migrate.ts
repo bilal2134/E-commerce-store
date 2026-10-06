@@ -1,0 +1,87 @@
+/**
+ * Applies drizzle/dsql/*.sql (ADR 0014). Aurora DSQL allows one DDL statement
+ * per transaction and builds indexes asynchronously, so every statement runs
+ * on its own (autocommit) and each CREATE INDEX ASYNC job is awaited with
+ * sys.wait_for_job before continuing. Statements use IF NOT EXISTS, so a run
+ * that stopped halfway can simply be repeated.
+ *
+ * `target: "postgres"` applies the same files to plain PostgreSQL (ASYNC
+ * removed); tests use it to prove the DSQL schema matches the Drizzle one.
+ */
+import fs from "node:fs";
+import path from "node:path";
+import type postgres from "postgres";
+
+export const DSQL_MIGRATIONS_DIR = path.join(process.cwd(), "drizzle", "dsql");
+
+export interface ApplyOptions {
+  target: "dsql" | "postgres";
+  dir?: string;
+  log?: (msg: string) => void;
+}
+
+export function splitStatements(fileSql: string): string[] {
+  return fileSql
+    .split("--> statement-breakpoint")
+    .map((s) => s.trim())
+    .filter((s) => s.split("\n").some((line) => line.trim() !== "" && !line.trim().startsWith("--")));
+}
+
+export async function applyDsqlMigrations(sql: postgres.Sql, opts: ApplyOptions): Promise<string[]> {
+  const dir = opts.dir ?? DSQL_MIGRATIONS_DIR;
+  const log = opts.log ?? (() => {});
+  await sql.unsafe(
+    "CREATE TABLE IF NOT EXISTS dsql_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())",
+  );
+  const done = new Set((await sql<{ name: string }[]>`select name from dsql_migrations`).map((r) => r.name));
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  const applied: string[] = [];
+  for (const file of files) {
+    if (done.has(file)) continue;
+    log(`applying ${file}`);
+    for (const statement of splitStatements(fs.readFileSync(path.join(dir, file), "utf8"))) {
+      const isAsyncIndex = /\bINDEX\s+ASYNC\b/i.test(statement);
+      const text = opts.target === "postgres" ? statement.replace(/\bINDEX\s+ASYNC\b/i, "INDEX") : statement;
+      const rows = await sql.unsafe<{ job_id?: string }[]>(text);
+      const jobId = rows[0]?.job_id;
+      if (opts.target === "dsql" && isAsyncIndex && jobId) {
+        const [result] = await sql<{ ok: boolean }[]>`select sys.wait_for_job(${jobId}) as ok`;
+        if (!result?.ok) throw new Error(`Index job ${jobId} failed for: ${statement.split("\n")[0]}`);
+      }
+    }
+    await sql`insert into dsql_migrations (name) values (${file})`;
+    applied.push(file);
+  }
+  return applied;
+}
+
+/**
+ * Creates the application's database role and maps it to the Lambda's IAM
+ * role (DSQL `AWS IAM GRANT`). The app only gets data access: no DDL.
+ */
+export async function grantAppRole(sql: postgres.Sql, appUser: string, iamRoleArn: string): Promise<void> {
+  if (!/^[a-z_][a-z0-9_]{0,62}$/.test(appUser)) throw new Error(`Invalid role name: ${appUser}`);
+  if (!/^arn:aws:iam::\d{12}:role\/[\w+=,.@/-]+$/.test(iamRoleArn))
+    throw new Error(`Invalid IAM role ARN: ${iamRoleArn}`);
+  const [exists] = await sql`select 1 from pg_roles where rolname = ${appUser}`;
+  if (!exists) await sql.unsafe(`CREATE ROLE ${appUser} WITH LOGIN`);
+  await sql.unsafe(`AWS IAM GRANT ${appUser} TO '${iamRoleArn}'`);
+  await sql.unsafe(`GRANT USAGE ON SCHEMA public TO ${appUser}`);
+  const tables = await sql<{ name: string }[]>`
+    select tablename as name from pg_tables where schemaname = 'public' and tablename <> 'dsql_migrations'`;
+  for (const { name } of tables) {
+    await sql.unsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON public.${quoteIdent(name)} TO ${appUser}`);
+  }
+  const sequences = await sql<{ name: string }[]>`
+    select sequencename as name from pg_sequences where schemaname = 'public'`;
+  for (const { name } of sequences) {
+    await sql.unsafe(`GRANT USAGE, SELECT ON SEQUENCE public.${quoteIdent(name)} TO ${appUser}`);
+  }
+}
+
+function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}

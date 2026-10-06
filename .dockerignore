@@ -18,3 +18,5 @@ Dockerfile
 .dockerignore
 docs
 tests
+.open-next
+dist

@@ -85,10 +85,22 @@ async function main() {
   const storage = scriptStorage();
   console.log("Seeding development sample data…");
 
-  await db.execute(sql`
-    truncate table order_status_events, order_items, orders, reviews, product_sizes,
-      product_images, products, categories, instagram_posts restart identity cascade
-  `);
+  // DELETE rather than TRUNCATE so this also runs on Aurora DSQL (ADR 0014).
+  // Children first; sub-categories before their parents (RESTRICT foreign key).
+  for (const statement of [
+    sql`delete from order_status_events`,
+    sql`delete from order_items`,
+    sql`delete from orders`,
+    sql`delete from reviews`,
+    sql`delete from product_sizes`,
+    sql`delete from product_images`,
+    sql`delete from products`,
+    sql`delete from categories where parent_id is not null`,
+    sql`delete from categories`,
+    sql`delete from instagram_posts`,
+  ]) {
+    await db.execute(statement);
+  }
   await db.execute(sql`alter sequence product_code_seq restart with 1`);
   await db.execute(sql`alter sequence order_code_seq restart with 1`);
 

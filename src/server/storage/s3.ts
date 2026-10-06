@@ -10,6 +10,12 @@ export interface S3StorageConfig {
   secretAccessKey: string;
   forcePathStyle: boolean;
   publicBaseUrl: string;
+  /**
+   * Prepended to every object key, e.g. "media/" when uploads share a bucket
+   * with the site's build assets (AWS, ADR 0014). Public URLs already include it
+   * through publicBaseUrl.
+   */
+  keyPrefix?: string;
 }
 
 export class S3Storage implements ObjectStorage {
@@ -33,7 +39,7 @@ export class S3Storage implements ObjectStorage {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.config.bucket,
-        Key: input.key,
+        Key: this.objectKey(input.key),
         Body: input.body,
         ContentType: input.contentType,
         CacheControl: input.cacheControl ?? IMMUTABLE_CACHE_CONTROL,
@@ -49,10 +55,14 @@ export class S3Storage implements ObjectStorage {
       await this.client.send(
         new DeleteObjectsCommand({
           Bucket: this.config.bucket,
-          Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
+          Delete: { Objects: chunk.map((key) => ({ Key: this.objectKey(key) })), Quiet: true },
         }),
       );
     }
+  }
+
+  private objectKey(key: string): string {
+    return `${this.config.keyPrefix ?? ""}${key}`;
   }
 
   publicUrl(key: string): string {

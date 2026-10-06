@@ -36,13 +36,53 @@ export async function prepareImageForUpload(file: File): Promise<File> {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
     ctx.drawImage(bitmap, 0, 0, width, height);
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", CLIENT_JPEG_QUALITY),
-    );
-    if (!blob) throw new Error("Your browser could not process this image.");
+    const blob = await encodeWithinBudget(canvas);
     const base = file.name.replace(/\.[^.]+$/, "") || "photo";
     return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
   } finally {
     bitmap.close();
+  }
+}
+
+/**
+ * Upload requests must stay small: on AWS Lambda the whole request (base64
+ * encoded) is capped at 6 MB, so one photo has to stay under ~4 MB. Very
+ * detailed photos are re-encoded at lower quality, then at a smaller size.
+ */
+export const CLIENT_MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
+const QUALITY_STEPS = [CLIENT_JPEG_QUALITY, 0.82, 0.74];
+
+async function encodeWithinBudget(canvas: HTMLCanvasElement): Promise<Blob> {
+  let source = canvas;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const quality of QUALITY_STEPS) {
+      const blob = await new Promise<Blob | null>((resolve) => source.toBlob(resolve, "image/jpeg", quality));
+      if (!blob) throw new Error("Your browser could not process this image.");
+      if (blob.size <= CLIENT_MAX_UPLOAD_BYTES) return blob;
+    }
+    const smaller = document.createElement("canvas");
+    smaller.width = Math.max(1, Math.round(source.width * 0.8));
+    smaller.height = Math.max(1, Math.round(source.height * 0.8));
+    const ctx = smaller.getContext("2d");
+    if (!ctx) throw new Error("Your browser could not process this image.");
+    ctx.drawImage(source, 0, 0, smaller.width, smaller.height);
+    source = smaller;
+  }
+  throw new Error("This photo is too large. Try a smaller photo.");
+}
+
+/**
+ * Replaces the image file in `field` of `data` with its prepared version.
+ * Returns an error message for the form, or null when the field is empty or
+ * the photo was prepared.
+ */
+export async function preparePhotoField(data: FormData, field: string): Promise<string | null> {
+  const file = data.get(field);
+  if (!(file instanceof File) || file.size === 0) return null;
+  try {
+    data.set(field, await prepareImageForUpload(file));
+    return null;
+  } catch (err) {
+    return err instanceof Error ? err.message : "This image could not be read. Try a different photo.";
   }
 }

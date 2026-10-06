@@ -38,3 +38,16 @@ export function ipLimitSubject(ip: string): string {
     .map((h) => (h || "0").toLowerCase().replace(/^0+(?=.)/, ""))
     .join(":")}::/64`;
 }
+
+/**
+ * CloudFront's `CloudFront-Viewer-Address` header is `<ip>:<port>`, for IPv6
+ * too (`2001:db8::1:51234`). CloudFront sets it itself, so it can't be spoofed
+ * through CloudFront; the port is dropped because it changes per connection.
+ */
+export function parseViewerAddress(headerValue: string | null): string | null {
+  if (!headerValue) return null;
+  const value = headerValue.trim();
+  const cut = value.lastIndexOf(":");
+  if (cut <= 0 || !/^\d{1,5}$/.test(value.slice(cut + 1))) return null;
+  return pickClientIp(value.slice(0, cut), 1);
+}

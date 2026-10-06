@@ -29,13 +29,18 @@ describe("recordEvent", () => {
     ]);
   });
 
-  it("sets product_id to null when the product is deleted", async () => {
+  it("removes a deleted product's events, even when one visitor viewed several products", async () => {
     const cat = await insertCategory(db);
-    const p = await insertProduct(db, cat.id);
-    await recordEvent(db, { type: "whatsapp_order_click", productCode: p.code }, "h1");
+    const a = await insertProduct(db, cat.id);
+    const b = await insertProduct(db, cat.id);
+    // Same visitor, same day: nulling product_id instead would make these two
+    // rows identical and break the dedupe index, failing the product delete.
+    await recordEvent(db, { type: "product_view", productCode: a.code }, "h1");
+    await recordEvent(db, { type: "product_view", productCode: b.code }, "h1");
+    await recordEvent(db, { type: "search" }, "h1");
     await db.delete(schema.products);
-    const [row] = await db.select().from(schema.analyticsEvents);
-    expect(row?.productId).toBeNull();
+    const rows = await db.select().from(schema.analyticsEvents);
+    expect(rows.map((r) => r.type)).toEqual(["search"]);
   });
 
   it("stores one row per visitor, event and target per day", async () => {

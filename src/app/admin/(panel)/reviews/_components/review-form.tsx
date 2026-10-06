@@ -6,6 +6,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { StatusMessage } from "@/components/admin/status-message";
 import { fieldErrorsFrom } from "@/domain/validation/common";
 import { adminReviewFromFormData, adminReviewSchema } from "@/domain/validation/review";
+import { preparePhotoField } from "@/components/admin/prepare-image";
 import { createReviewAction } from "../actions";
 
 export function ReviewForm({ products }: { products: { id: string; name: string; code: string }[] }) {
@@ -37,7 +38,16 @@ export function ReviewForm({ products }: { products: { id: string; name: string;
       return;
     }
     setClientErrors({});
-    startTransition(() => run(fd));
+    const form = e.currentTarget;
+    void (async () => {
+      const photoError = await preparePhotoField(fd, "photo");
+      if (photoError) {
+        setClientErrors({ photo: photoError });
+        requestAnimationFrame(() => form.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
+        return;
+      }
+      startTransition(() => run(fd));
+    })();
   }
 
   const clear = (f: string) => () => {
@@ -98,7 +108,12 @@ export function ReviewForm({ products }: { products: { id: string; name: string;
               </Select>
             )}
           </Field>
-          <Field id="review-photo" label="Photo (optional)" hint="JPEG, PNG or WebP up to 10 MB.">
+          <Field
+            id="review-photo"
+            label="Photo (optional)"
+            error={error("photo")}
+            hint="JPEG, PNG or WebP up to 10 MB."
+          >
             {(aria) => (
               <Input
                 {...aria}

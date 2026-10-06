@@ -5,6 +5,7 @@
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { dsqlPassword } from "../../src/server/db/dsql";
 import * as schema from "../../src/server/db/schema";
 import { S3Storage } from "../../src/server/storage/s3";
 
@@ -19,6 +20,10 @@ export function connect() {
     max: 2,
     prepare: process.env.DATABASE_PREPARE !== "false",
     ssl: sslMode(process.env.DATABASE_SSL),
+    // Aurora DSQL (ADR 0014): sign an IAM token per connection.
+    ...(process.env.DATABASE_AUTH === "dsql-iam"
+      ? { password: dsqlPassword(requireEnv("DATABASE_URL")) }
+      : {}),
     onnotice: () => {},
   });
   return { sql, db: drizzle(sql, { schema, casing: "snake_case" }) };
@@ -33,6 +38,7 @@ export function scriptStorage() {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
     publicBaseUrl: requireEnv("MEDIA_BASE_URL"),
+    keyPrefix: process.env.S3_KEY_PREFIX ?? "",
   });
 }
 

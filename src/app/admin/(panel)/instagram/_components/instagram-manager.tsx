@@ -9,6 +9,7 @@ import { Field, Input } from "@/components/ui/field";
 import { ArrowDownIcon, ArrowUpIcon, TrashIcon } from "@/components/ui/icons";
 import { fieldErrorsFrom } from "@/domain/validation/common";
 import { instagramPostFromFormData, instagramPostSchema } from "@/domain/validation/instagram";
+import { preparePhotoField } from "@/components/admin/prepare-image";
 import type { ActionResult } from "@/domain/validation/result";
 import { createInstagramPostAction, deleteInstagramPostAction, moveInstagramPostAction } from "../actions";
 
@@ -52,7 +53,16 @@ export function InstagramManager({ posts, max }: { posts: InstagramPostView[]; m
       return;
     }
     setClientErrors({});
-    startTransition(() => run(fd));
+    const form = e.currentTarget;
+    void (async () => {
+      const photoError = await preparePhotoField(fd, "image");
+      if (photoError) {
+        setClientErrors({ image: photoError });
+        requestAnimationFrame(() => form.querySelector<HTMLElement>("#ig-image")?.focus());
+        return;
+      }
+      startTransition(() => run(fd));
+    })();
   }
 
   async function move(post: InstagramPostView, direction: "up" | "down") {

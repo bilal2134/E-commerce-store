@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Panel } from "@/components/admin/ui";
 import { StatusMessage } from "@/components/admin/status-message";
-import { prepareImageForUpload } from "@/components/admin/prepare-image";
+import { preparePhotoField } from "@/components/admin/prepare-image";
 import { fieldErrorsFrom } from "@/domain/validation/common";
 import {
   settingsSchema,
@@ -74,12 +74,13 @@ export function SettingsForm({
       const file = data.get("heroImage");
       if (file instanceof File && file.size > 0) {
         setPreparing(true);
-        try {
-          data.set("heroImage", await prepareImageForUpload(file));
-        } catch {
-          // Fall back to the original file; the server validates and re-encodes it anyway.
-        }
+        const photoError = await preparePhotoField(data, "heroImage");
         setPreparing(false);
+        if (photoError) {
+          setErrors({ heroImage: photoError });
+          requestAnimationFrame(() => form.querySelector<HTMLElement>("#heroImage")?.focus());
+          return;
+        }
       }
       startTransition(() => run(data));
     })();
@@ -219,8 +220,15 @@ export function SettingsForm({
                   name="heroImage"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  aria-invalid={shown("heroImage") ? true : undefined}
+                  aria-describedby={shown("heroImage") ? "heroImage-error" : undefined}
                   className="mt-1.5 h-auto max-w-md py-2 file:me-3 file:rounded-sm file:border-0 file:bg-blush file:px-3 file:py-1.5 file:text-sm"
                 />
+                {shown("heroImage") ? (
+                  <p id="heroImage-error" className="mt-1.5 text-sm font-medium text-danger">
+                    {shown("heroImage")}
+                  </p>
+                ) : null}
               </div>
               <Field
                 id="heroImageAlt"

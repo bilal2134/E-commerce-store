@@ -19,9 +19,12 @@ import { connect, requireEnv } from "./lib/script-db";
 const PREFIXES = ["products/", "banners/", "reviews/", "instagram/"];
 const MIN_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** "products/<uuid>-640.webp" → "products/<uuid>" */
+/** Uploads may live under a key prefix (S3_KEY_PREFIX, e.g. "media/" on AWS). */
+const KEY_PREFIX = process.env.S3_KEY_PREFIX ?? "";
+
+/** "[media/]products/<uuid>-640.webp" → "products/<uuid>" */
 function baseKey(objectKey: string): string {
-  return objectKey.replace(/-\d+\.webp$/, "");
+  return objectKey.slice(KEY_PREFIX.length).replace(/-\d+\.webp$/, "");
 }
 
 async function main() {
@@ -52,7 +55,7 @@ async function main() {
     let token: string | undefined;
     do {
       const page = await client.send(
-        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
+        new ListObjectsV2Command({ Bucket: bucket, Prefix: KEY_PREFIX + prefix, ContinuationToken: token }),
       );
       for (const obj of page.Contents ?? []) {
         if (!obj.Key) continue;

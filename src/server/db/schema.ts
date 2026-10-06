@@ -89,11 +89,11 @@ export const products = pgTable(
     badge: text("badge").$type<(typeof BADGES)[number]>(),
     /** Instagram handle of the collaboration partner, e.g. "fairycoreforher". */
     collabPartner: text("collab_partner"),
-    colors: text("colors")
-      .array()
+    /** JSON array, not text[]: Aurora DSQL can't store array columns (ADR 0014). */
+    colors: jsonb("colors")
       .$type<(typeof COLORS)[number][]>()
       .notNull()
-      .default(sql`'{}'::text[]`),
+      .default(sql`'[]'::jsonb`),
     isVisible: boolean("is_visible").notNull().default(false),
     /** Non-null = featured on the homepage; lower ranks first (AS-18). */
     featuredRank: integer("featured_rank"),
@@ -117,7 +117,7 @@ export const products = pgTable(
     check("products_badge_valid", sql`badge is null or ${inList("badge", BADGES)}`),
     check(
       "products_colors_valid",
-      sql.raw(`colors <@ array[${COLORS.map((c) => `'${c}'`).join(", ")}]::text[]`),
+      sql.raw(`jsonb_typeof(colors) = 'array' and colors <@ '${JSON.stringify(COLORS)}'::jsonb`),
     ),
     check("products_name_not_blank", sql`length(trim(${t.name})) > 0`),
     check(
@@ -137,7 +137,7 @@ export const productImages = pgTable(
     /** 0-based display order; position 0 is the thumbnail (AS-03). */
     position: integer("position").notNull(),
     storageKey: text("storage_key").notNull(),
-    widths: integer("widths").array().notNull(),
+    widths: jsonb("widths").$type<number[]>().notNull(),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
     alt: text("alt").notNull().default(""),
@@ -181,7 +181,7 @@ export const reviews = pgTable(
     rating: smallint("rating"),
     productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
     photoKey: text("photo_key"),
-    photoWidths: integer("photo_widths").array(),
+    photoWidths: jsonb("photo_widths").$type<number[]>(),
     photoWidth: integer("photo_width"),
     photoHeight: integer("photo_height"),
     photoBlurDataUrl: text("photo_blur_data_url"),
@@ -324,7 +324,7 @@ export const siteSettings = pgTable(
     heroCtaLabel: text("hero_cta_label").notNull().default(""),
     heroCtaHref: text("hero_cta_href").notNull().default(""),
     heroImageKey: text("hero_image_key"),
-    heroImageWidths: integer("hero_image_widths").array(),
+    heroImageWidths: jsonb("hero_image_widths").$type<number[]>(),
     heroImageWidth: integer("hero_image_width"),
     heroImageHeight: integer("hero_image_height"),
     heroImageBlurDataUrl: text("hero_image_blur_data_url"),
@@ -424,7 +424,7 @@ export const instagramPosts = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     postUrl: text("post_url").notNull(),
     storageKey: text("storage_key").notNull(),
-    widths: integer("widths").array().notNull(),
+    widths: jsonb("widths").$type<number[]>().notNull(),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
     blurDataUrl: text("blur_data_url"),
@@ -448,7 +448,9 @@ export const analyticsEvents = pgTable(
   {
     id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
     type: text("type").$type<(typeof ANALYTICS_EVENT_TYPES)[number]>().notNull(),
-    productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+    /** Cascade, not set null: nulling would collide with the per-day dedupe index (two
+     *  views by one visitor of products deleted later would become identical rows). */
+    productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }),
     categorySlug: text("category_slug"),
     /** sha256(dailySalt + ipKey + userAgent + host), 32 hex chars; not linkable across days. */
     visitorDayHash: text("visitor_day_hash").notNull(),

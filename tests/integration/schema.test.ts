@@ -148,13 +148,21 @@ describe("product_images", () => {
     expect(e.code).toBe(UNIQUE);
     expect(e.constraint_name).toBe("product_images_product_position_key");
   });
-  it("allows swapping positions inside one transaction (deferrable)", async () => {
+  it("checks positions immediately; reorders delete and re-insert (DSQL has no deferrable unique)", async () => {
     const p = await insertProduct(db, categoryId);
     const a = await insertImage(db, p.id, 0);
     const b = await insertImage(db, p.id, 1);
-    await db.transaction(async (tx) => {
+    const swapInPlace = db.transaction(async (tx) => {
       await tx.update(schema.productImages).set({ position: 1 }).where(eq(schema.productImages.id, a.id));
       await tx.update(schema.productImages).set({ position: 0 }).where(eq(schema.productImages.id, b.id));
+    });
+    expect((await pgError(swapInPlace)).code).toBe(UNIQUE);
+    await db.transaction(async (tx) => {
+      await tx.delete(schema.productImages).where(eq(schema.productImages.productId, p.id));
+      await tx.insert(schema.productImages).values([
+        { ...b, position: 0 },
+        { ...a, position: 1 },
+      ]);
     });
     const rows = await db.select().from(schema.productImages).where(eq(schema.productImages.productId, p.id));
     expect(Object.fromEntries(rows.map((r) => [r.id, r.position]))).toEqual({ [a.id]: 1, [b.id]: 0 });

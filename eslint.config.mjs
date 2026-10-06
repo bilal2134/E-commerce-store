@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     // Project-specific
+    "dist/**",
+    ".tmp/**",
+    "infrastructure/aws/cdk/**",
+    ".open-next/**",
     ".claude/**",
     ".cache/**",
     "coverage/**",

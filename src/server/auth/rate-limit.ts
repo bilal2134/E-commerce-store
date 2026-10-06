@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import type { Database } from "../db/client";
+import { withConflictRetry } from "../db/dsql";
 
 /**
  * Fixed-window rate limiter backed by Postgres (no Redis needed at this
@@ -21,12 +22,16 @@ export async function consumeRateLimit(
   const nowMs = Date.now();
   const windowMs = windowSeconds * 1000;
   const windowStart = new Date(Math.floor(nowMs / windowMs) * windowMs);
-  const rows = await database.execute<{ count: number }>(sql`
-    insert into rate_limits (key, window_start, count)
-    values (${key}, ${windowStart.toISOString()}, 1)
-    on conflict (key, window_start) do update set count = rate_limits.count + 1
-    returning count
-  `);
+  // Hot keys (e.g. the global analytics bucket) can conflict under DSQL's
+  // optimistic concurrency; the upsert is idempotent per attempt, so retry.
+  const rows = await withConflictRetry(() =>
+    database.execute<{ count: number }>(sql`
+      insert into rate_limits (key, window_start, count)
+      values (${key}, ${windowStart.toISOString()}, 1)
+      on conflict (key, window_start) do update set count = rate_limits.count + 1
+      returning count
+    `),
+  );
   const count = Number(rows[0]?.count ?? 1);
   const retryAfterSeconds = Math.max(1, Math.ceil((windowStart.getTime() + windowMs - nowMs) / 1000));
   return { allowed: count <= limit, count, retryAfterSeconds };

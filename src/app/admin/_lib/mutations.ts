@@ -1,17 +1,21 @@
 import "server-only";
 import { revalidatePath, updateTag } from "next/cache";
+import { after } from "next/server";
 import { fail, type ActionResult } from "@/domain/validation/result";
 import { CACHE_TAGS, type CacheTag } from "@/server/cache";
 import { AdminError } from "@/server/admin/errors";
 import { ImageValidationError } from "@/server/images/pipeline";
+import { invalidateCdn } from "@/server/cdn";
 
 /**
  * Call from Server Actions after a successful write: expires the storefront
- * cache tags (read-your-writes) and refreshes every admin page.
+ * cache tags (read-your-writes), refreshes every admin page and, on AWS, drops
+ * the CloudFront copy once the response has been sent.
  */
 export function refreshAfterWrite(...tags: CacheTag[]): void {
   for (const tag of new Set(tags)) updateTag(tag);
   revalidatePath("/admin", "layout");
+  after(invalidateCdn);
 }
 
 export const TAGS = CACHE_TAGS;

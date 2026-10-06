@@ -53,3 +53,11 @@ next-env.d.ts
 
 # Local scratch (screenshots etc.)
 .tmp/
+
+# OpenNext build output
+/.open-next/
+/dist/
+
+# AWS CDK
+/infrastructure/aws/cdk/node_modules/
+/infrastructure/aws/cdk/cdk.out/

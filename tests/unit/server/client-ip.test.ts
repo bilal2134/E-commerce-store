@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickClientIp } from "@/server/client-ip";
+import { pickClientIp, parseViewerAddress } from "@/server/client-ip";
 
 describe("pickClientIp", () => {
   it("reads X-Forwarded-For from the right, ignoring spoofed prefixes", () => {
@@ -27,5 +27,18 @@ describe("ipLimitSubject", () => {
     expect(ipLimitSubject("2001:db8:abcd:12::1")).toBe("2001:db8:abcd:12::/64");
     expect(ipLimitSubject("2001:0db8:abcd:0012:ffff:1:2:3")).toBe("2001:db8:abcd:12::/64");
     expect(ipLimitSubject("::1")).toBe("0:0:0:0::/64");
+  });
+});
+
+describe("parseViewerAddress (CloudFront-Viewer-Address)", () => {
+  it("drops the port from IPv4 and IPv6 values", () => {
+    expect(parseViewerAddress("198.51.100.10:46532")).toBe("198.51.100.10");
+    expect(parseViewerAddress("2001:db8:abcd:12::1:51234")).toBe("2001:db8:abcd:12::1");
+  });
+  it("rejects values without a numeric port or with junk", () => {
+    expect(parseViewerAddress("198.51.100.10")).toBeNull();
+    expect(parseViewerAddress("evil:abc")).toBeNull();
+    expect(parseViewerAddress("<script>:80")).toBeNull();
+    expect(parseViewerAddress(null)).toBeNull();
   });
 });

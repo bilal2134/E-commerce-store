@@ -43,6 +43,20 @@
       "when": 1790748590963,
       "tag": "0005_analytics_dedupe",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791271558711,
+      "tag": "0006_dsql_compat",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791276188274,
+      "tag": "0007_analytics_cascade",
+      "breakpoints": true
     }
   ]
 }
