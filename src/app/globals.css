@@ -72,6 +72,7 @@
 
   /* Motion */
   --ease-out-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 150ms;
   --duration-base: 250ms;
 
@@ -173,6 +174,15 @@
     letter-spacing: var(--tracking-display);
     /* opsz 48 keeps hairlines visible on 1x screens at 60–90 px sizes. */
     font-variation-settings: "opsz" 48;
+    text-wrap: balance;
+  }
+  /* Hero headline: Bodoni at its finest optical size, tight and oversized. */
+  .type-hero {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 0.94;
+    letter-spacing: -0.03em;
+    font-variation-settings: "opsz" 60;
     text-wrap: balance;
   }
   .type-title {
@@ -285,6 +295,7 @@ html[lang="ur"] {
 html[lang="ur"] body {
   line-height: 2;
 }
+html[lang="ur"] .type-hero,
 html[lang="ur"] .type-display,
 html[lang="ur"] .type-title {
   letter-spacing: 0;
@@ -306,4 +317,66 @@ html[lang="ur"] :where(p, li, dd, span, label, a, button, legend, summary) {
    own direction per paragraph (punctuation lands on the right side). */
 html[dir="rtl"] :where(p, a, h1, h2, h3, h4, dd, dt, figcaption, blockquote, summary) {
   unicode-bidi: plaintext;
+}
+
+/*
+ * Arch: USBA's window/mirror motif (hero frame, category tiles). A true
+ * semicircle on a 4:5 frame: horizontal radius 50% of the width, vertical
+ * radius 40% of the height (= 50% of the width).
+ */
+.arch {
+  border-radius: 50% 50% 0 0 / 40% 40% 0 0;
+}
+
+/*
+ * Hero (src/components/store/home-hero.tsx): the storefront's single load
+ * sequence. The headline rises out of a mask, then the supporting pieces settle in.
+ * Only transforms/opacity animate; the arched LCP image never does.
+ */
+.hero-link {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+  padding-bottom: 2px;
+  transition: background-size var(--duration-base) var(--ease-out-soft);
+}
+.hero-link:hover {
+  color: var(--color-cherry);
+  background-size: 35% 1px;
+}
+/* The banner settles from a slight zoom; transform only, so it still paints at once. */
+.hero-image {
+  transform-origin: 60% 40%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-title {
+    animation: hero-rise 1.2s var(--ease-out-expo) both;
+    animation-delay: var(--hero-delay, 0ms);
+  }
+  .hero-fade {
+    animation: hero-settle 1s var(--ease-out-expo) both;
+    animation-delay: var(--hero-delay, 0ms);
+  }
+  .hero-image {
+    animation: hero-zoom 1.8s var(--ease-out-expo) both;
+  }
+}
+/* Rises out of a mask that opens upwards (clip-path + transform: no layout change). */
+@keyframes hero-rise {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.35em);
+  }
+  to {
+    clip-path: inset(-0.5em);
+  }
+}
+@keyframes hero-zoom {
+  from {
+    transform: scale(1.08);
+  }
+}
+@keyframes hero-settle {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
 }

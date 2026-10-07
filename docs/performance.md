@@ -22,6 +22,12 @@ First measurement before optimisation: home 72 (LCP 4.4 s, TBT 520 ms). Changes 
 
 Interpretation: "slow 4G" in Lighthouse is harsher than typical Pakistani 4G. LCP there is ~3.1 s; on a regular 4G link (≈9 Mbps / 70 ms) the same waterfall finishes well under 2 s. Field data (CrUX / RUM) must confirm after launch.
 
+## Live measurements (AWS, 2026-10-07)
+
+Lighthouse mobile preset against https://usbaofficial.com.pk from Pakistan (CloudFront edge: Dubai, server: Sydney): home 85 / listing 86 / product 89, LCP 2.5–3.0 s, CLS 0. Cached pages answer in ~0.16 s; an edge cache miss goes to Sydney (~0.5 s warm, up to ~1.4 s with a Lambda cold start). A 5-minute EventBridge warm-up ping (`KeepWarm` in the app stack, free tier) keeps one instance warm. Deploys invalidate CloudFront only after the new server code is live.
+
+Homepage redesign (premium hero, 2026-10-07), local production build, same method: 89–92, LCP 3.3 s, CLS 0 (unchanged from before). A word-by-word headline animation was tried and dropped: each word box re-wrapped when Bodoni replaced the fallback font (CLS 0.13 on mobile).
+
 ## Budgets and what ships
 
 | Item                      | Size (gzip)                                                    | Notes                                                                                               |

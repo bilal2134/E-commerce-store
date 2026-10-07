@@ -5,6 +5,8 @@ import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as events from "aws-cdk-lib/aws-events";
+import * as eventTargets from "aws-cdk-lib/aws-events-targets";
 import type * as dsql from "aws-cdk-lib/aws-dsql";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -187,6 +189,28 @@ export class AppStack extends Stack {
       }),
     });
     revalidation.addEventSource(new SqsEventSource(revalidationQueue, { batchSize: 5 }));
+
+    // Keep one server instance warm: a CloudFront miss then costs the trip to
+    // Sydney (~0.5 s from Pakistan) instead of also a ~1 s cold start. The
+    // wrapper answers OpenNext's warmer event without running Next and preloads
+    // the routes. Every 5 minutes ≈ 8,900 short invocations a month (free tier;
+    // EventBridge scheduled rules are free).
+    new events.Rule(this, "KeepWarm", {
+      description: "USBA store: keeps the server function warm",
+      schedule: events.Schedule.rate(Duration.minutes(5)),
+      targets: [
+        new eventTargets.LambdaFunction(server, {
+          event: events.RuleTargetInput.fromObject({
+            type: "warmer",
+            warmerId: "usba-keep-warm",
+            index: 0,
+            concurrency: 1,
+            delay: 0,
+          }),
+          retryAttempts: 0,
+        }),
+      ],
+    });
 
     /* ---------------------------------------------------------------- */
     /* CloudFront                                                        */

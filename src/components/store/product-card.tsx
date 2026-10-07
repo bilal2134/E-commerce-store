@@ -39,7 +39,7 @@ export async function ProductCard({
             sizes={sizes}
             priority={priority}
             className={cn(
-              "transition-transform duration-500 ease-[var(--ease-out-soft)]",
+              "transition-transform duration-700 ease-[var(--ease-out-soft)] [@media(hover:hover)]:group-hover:scale-[1.04]",
               soldOut && "opacity-70 grayscale-[35%]",
             )}
           />
@@ -49,7 +49,7 @@ export async function ProductCard({
             image={product.hoverImage}
             sizes={sizes}
             alt=""
-            className="absolute inset-0 opacity-0 transition-opacity duration-300 [@media(hover:hover)]:group-hover:opacity-100"
+            className="absolute inset-0 opacity-0 transition-[opacity,transform] duration-700 ease-[var(--ease-out-soft)] [@media(hover:hover)]:group-hover:scale-[1.04] [@media(hover:hover)]:group-hover:opacity-100"
           />
         ) : null}
         <div className="pointer-events-none absolute start-2 top-2 flex flex-col items-start gap-1">

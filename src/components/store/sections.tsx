@@ -20,12 +20,12 @@ export function SectionHeader({
   tone?: "ink" | "cherry" | "petal";
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:mb-7">
-      <div>
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 md:mb-9 md:flex-nowrap">
+      <div className="min-w-0">
         <h2
           id={id}
           className={cn(
-            "type-title text-3xl md:text-4xl",
+            "type-title text-[2.125rem] leading-[1.05] md:text-5xl",
             tone === "cherry" && "text-cherry",
             tone === "petal" && "text-petal",
           )}
@@ -38,6 +38,13 @@ export function SectionHeader({
           </p>
         ) : null}
       </div>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "mb-3 hidden h-px min-w-12 flex-1 md:block",
+          tone === "petal" ? "bg-petal/30" : "bg-line-strong",
+        )}
+      />
       {action ? (
         <Link
           href={action.href}

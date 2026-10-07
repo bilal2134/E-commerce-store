@@ -21,6 +21,12 @@ const PAGES = [
 for (const path of PAGES) {
   test(`no serious accessibility violations: ${path}`, async ({ page }) => {
     await page.goto(path);
+    // Judge the settled page: mid-fade text (hero entrance) has lower contrast for a moment.
+    await page.waitForFunction(() =>
+      document
+        .getAnimations()
+        .every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity),
+    );
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
       .analyze();

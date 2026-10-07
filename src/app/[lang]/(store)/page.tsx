@@ -12,11 +12,12 @@ import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 import { ButtonLink } from "@/components/ui/button";
 import { ClockIcon, InstagramIcon, RulerIcon, WhatsappIcon } from "@/components/ui/icons";
 import { JsonLd } from "@/components/store/json-ld";
+import { HomeHero } from "@/components/store/home-hero";
 import { ResponsiveImg } from "@/components/store/responsive-image";
 import { ReviewCard } from "@/components/store/review-card";
 import { ProductGrid, ProductRail, Section, SectionHeader } from "@/components/store/sections";
 import { buildInstagramProfileUrl } from "@/domain/ordering";
-import { localePath, localizeHref, pageAlternates } from "@/i18n/config";
+import { localePath, pageAlternates } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -48,7 +49,6 @@ export default async function HomePage() {
   const home = buildHomeSections(catalog);
   const siteUrl = env().SITE_URL;
   const heroProducts = home.featured.filter((p) => p.image).slice(0, 2);
-  const hero = settings.hero;
   const instagramHandles = [settings.instagramHandle, settings.collabInstagramHandle].filter(
     (h): h is string => Boolean(h),
   );
@@ -62,85 +62,28 @@ export default async function HomePage() {
         ]}
       />
 
-      {/* Hero: oversized Bodoni headline is the single loud element of the page. */}
-      <section aria-labelledby="hero-title" className="container-page pt-6 md:pt-10">
-        <div className="grid items-end gap-6 md:grid-cols-12 md:gap-8">
-          <div className="md:col-span-6 md:pb-10 lg:col-span-7">
-            {hero.eyebrow ? <p className="text-sm font-medium text-ink-soft">{hero.eyebrow}</p> : null}
-            <h1
-              id="hero-title"
-              className="type-display mt-2 text-[2.75rem] leading-[0.98] text-cherry xs:text-5xl md:text-6xl lg:text-[5.5rem] lg:leading-[0.95]"
-            >
-              {hero.title || "USBA Official"}
-            </h1>
-            {hero.subtitle ? (
-              <p className="mt-5 max-w-md text-base text-ink-soft md:text-lg">{hero.subtitle}</p>
-            ) : null}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink
-                href={localizeHref(locale, hero.ctaHref || "/shop") as Route}
-                size="lg"
-                className="w-full xs:w-auto"
-              >
-                {hero.ctaLabel || t.home.shopNow}
-              </ButtonLink>
-              <ButtonLink href={at("/shop/sale")} variant="secondary" size="lg" className="w-full xs:w-auto">
-                {t.home.viewSale}
-              </ButtonLink>
-            </div>
-          </div>
-          <div className="md:col-span-6 lg:col-span-5">
-            {hero.image ? (
-              <div className="relative aspect-[4/5] overflow-hidden bg-blush">
-                <ResponsiveImg
-                  image={hero.image}
-                  sizes="(min-width: 64rem) 40vw, (min-width: 48rem) 50vw, 100vw"
-                  priority
-                />
-              </div>
-            ) : heroProducts.length ? (
-              <div className="grid grid-cols-2 items-end gap-3">
-                {heroProducts.map((p, i) => (
-                  <Link
-                    key={p.id}
-                    href={at(`/product/${p.slug}`)}
-                    className={i === 0 ? "block" : "block md:mb-12"}
-                    aria-label={p.name}
-                  >
-                    <span className="relative block aspect-[4/5] overflow-hidden bg-blush">
-                      {p.image ? (
-                        <ResponsiveImg
-                          image={p.image}
-                          sizes="(min-width: 64rem) 20vw, (min-width: 48rem) 25vw, 50vw"
-                          priority
-                          alt=""
-                        />
-                      ) : null}
-                    </span>
-                    <span className="mt-2 block text-sm text-ink-soft">{p.name}</span>
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
+      <HomeHero hero={settings.hero} products={heroProducts} locale={locale} t={t} />
 
       {/* Category shortcuts (CS-01) */}
       <section aria-labelledby="shortcuts-title" className="container-page mt-12 md:mt-16">
         <h2 id="shortcuts-title" className="sr-only">
           {t.home.shopByCategory}
         </h2>
-        <ul className="scroller -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-8 md:overflow-visible md:px-0">
+        <ul className="scroller -mx-4 flex snap-x scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-8 md:gap-5 md:overflow-visible md:px-0">
           {home.shortcuts.map((c) => (
             <li key={c.slug} className="w-[27vw] max-w-32 shrink-0 snap-start md:w-auto md:max-w-none">
-              <Link href={at(`/shop/${c.slug}`)} className="group block">
-                <span className="relative block aspect-[4/5] overflow-hidden bg-blush">
+              <Link href={at(`/shop/${c.slug}`)} className="group block text-center">
+                <span className="arch relative block aspect-[4/5] overflow-hidden bg-blush">
                   {c.cover?.image ? (
-                    <ResponsiveImg image={c.cover.image} sizes="(min-width: 48rem) 12vw, 27vw" alt="" />
+                    <ResponsiveImg
+                      image={c.cover.image}
+                      sizes="(min-width: 48rem) 12vw, 27vw"
+                      alt=""
+                      className="transition-transform duration-700 ease-[var(--ease-out-soft)] [@media(hover:hover)]:group-hover:scale-[1.06]"
+                    />
                   ) : null}
                 </span>
-                <span className="mt-2 block text-sm font-medium text-ink group-hover:text-cherry">
+                <span className="mt-3 block text-sm font-medium text-ink group-hover:text-cherry">
                   {t.nav[SHORTCUT_KEYS[c.slug as keyof typeof SHORTCUT_KEYS]] ?? c.label}
                 </span>
               </Link>
