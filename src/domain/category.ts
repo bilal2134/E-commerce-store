@@ -67,7 +67,7 @@ export function resolveShopListing(catalog: Catalog, slug: string | null): ShopL
       kind: "all",
       slug: null,
       title: "Shop all",
-      description: "Every USBA piece — heels, sneakers, bags, wallets, jewellery, phone cases and clothing.",
+      description: "Every USBA piece — heels, flats, sneakers, bags, tees, hoodies and watches.",
       subcategories: catalog.categories.map((c) => ({ slug: c.slug, name: c.name })),
       breadcrumbs: [HOME_CRUMB, SHOP_CRUMB],
       products: catalog.products,
@@ -111,4 +111,12 @@ export function allShopSlugs(tree: readonly CategoryTree[]): string[] {
     ...tree.flatMap((root) => [root.slug, ...root.children.map((c) => c.slug)]),
     ...Object.keys(COLLECTIONS),
   ];
+}
+
+/** Which collections have anything in them: empty ones aren't linked from navigation. */
+export function activeCollections(products: readonly ProductCard[]): Record<CollectionSlug, boolean> {
+  return {
+    collab: collectionProducts(products, "collab").length > 0,
+    sale: collectionProducts(products, "sale").length > 0,
+  };
 }

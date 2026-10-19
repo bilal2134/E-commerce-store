@@ -1,3 +1,4 @@
+import { activeCollections } from "@/domain/category";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { allShopSlugs, resolveShopListing } from "@/domain/category";
@@ -49,7 +50,7 @@ export default async function ShopCategoryPage({ params }: PageProps<"/[lang]/sh
     <ListingView
       listing={listing}
       siteUrl={env().SITE_URL}
-      navLinks={listingNavLinks(catalog.categories, listing, locale, t)}
+      navLinks={listingNavLinks(catalog.categories, listing, locale, t, activeCollections(catalog.products))}
     />
   );
 }

@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
+import { activeCollections } from "@/domain/category";
 import { buildInstagramProfileUrl, buildWhatsappUrl, buildEnquiryMessage } from "@/domain/ordering";
 import { localePath } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
@@ -10,7 +11,7 @@ import { LanguageSwitch } from "./language-switch";
 import { Wordmark } from "./site-header";
 
 export async function SiteFooter() {
-  const [{ categories }, settings, { locale, t }] = await Promise.all([
+  const [{ categories, products }, settings, { locale, t }] = await Promise.all([
     getCatalog(),
     getLocalizedSettings(),
     getI18n(),
@@ -20,6 +21,7 @@ export async function SiteFooter() {
   const whatsappUrl = settings.whatsappNumber
     ? buildWhatsappUrl(settings.whatsappNumber, buildEnquiryMessage())
     : null;
+  const active = activeCollections(products);
   const linkClass = "flex min-h-10 items-center text-sm font-medium text-ink hover:text-cherry";
 
   return (
@@ -73,19 +75,23 @@ export async function SiteFooter() {
                 </Link>
               </li>
             ))}
-            <li>
-              <Link href={at("/shop/collab")} className={linkClass}>
-                {t.footer.collab}
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={at("/shop/sale")}
-                className="flex min-h-10 items-center text-sm font-medium text-cherry"
-              >
-                {t.nav.sale}
-              </Link>
-            </li>
+            {active.collab ? (
+              <li>
+                <Link href={at("/shop/collab")} className={linkClass}>
+                  {t.footer.collab}
+                </Link>
+              </li>
+            ) : null}
+            {active.sale ? (
+              <li>
+                <Link
+                  href={at("/shop/sale")}
+                  className="flex min-h-10 items-center text-sm font-medium text-cherry"
+                >
+                  {t.nav.sale}
+                </Link>
+              </li>
+            ) : null}
             <li>
               <Link href={at("/shop")} className={linkClass}>
                 {t.common.shopAll}

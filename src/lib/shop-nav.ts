@@ -9,13 +9,15 @@ export function listingNavLinks(
   listing: ShopListing,
   locale: Locale,
   t: Dictionary,
+  active: { collab: boolean; sale: boolean } = { collab: true, sale: true },
 ): { href: Route; label: string; current?: boolean }[] {
   const at = (path: string) => localePath(locale, path) as Route;
   const roots = tree.map((r) => ({ href: at(`/shop/${r.slug}`), label: r.name }));
+  // Empty collections aren't linked, except the one being viewed.
   const collections = [
-    { slug: "collab", href: at("/shop/collab"), label: t.nav.collab },
-    { slug: "sale", href: at("/shop/sale"), label: t.nav.sale },
-  ];
+    { slug: "collab" as const, href: at("/shop/collab"), label: t.nav.collab },
+    { slug: "sale" as const, href: at("/shop/sale"), label: t.nav.sale },
+  ].filter((c) => active[c.slug] || (listing.kind === "collection" && listing.slug === c.slug));
   if (listing.kind === "all") return [...roots, ...collections.map(({ href, label }) => ({ href, label }))];
   if (listing.kind === "collection") {
     return [

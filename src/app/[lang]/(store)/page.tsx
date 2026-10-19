@@ -1,4 +1,5 @@
 import type { Metadata, Route } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { buildHomeSections } from "@/domain/home";
 import { env } from "@/server/config/env";
@@ -31,6 +32,9 @@ const SHORTCUT_KEYS = {
   sneakers: "sneakers",
   flats: "flats",
   bags: "bags",
+  tees: "tees",
+  hoodies: "hoodies",
+  watches: "watches",
   wallets: "wallets",
   jewellery: "jewellery",
   "phone-cases": "phoneCases",
@@ -62,14 +66,23 @@ export default async function HomePage() {
         ]}
       />
 
-      <HomeHero hero={settings.hero} products={heroProducts} locale={locale} t={t} />
+      <HomeHero
+        hero={settings.hero}
+        products={heroProducts}
+        locale={locale}
+        t={t}
+        showSale={home.sale.length > 0}
+      />
 
       {/* Category shortcuts (CS-01) */}
       <section aria-labelledby="shortcuts-title" className="container-page mt-12 md:mt-16">
         <h2 id="shortcuts-title" className="sr-only">
           {t.home.shopByCategory}
         </h2>
-        <ul className="scroller -mx-4 flex snap-x scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-8 md:gap-5 md:overflow-visible md:px-0">
+        <ul
+          className="scroller -mx-4 flex snap-x scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-[repeat(var(--tiles),minmax(0,1fr))] md:gap-5 md:overflow-visible md:px-0"
+          style={{ "--tiles": home.shortcuts.length } as CSSProperties}
+        >
           {home.shortcuts.map((c) => (
             <li key={c.slug} className="w-[27vw] max-w-32 shrink-0 snap-start md:w-auto md:max-w-none">
               <Link href={at(`/shop/${c.slug}`)} className="group block text-center">

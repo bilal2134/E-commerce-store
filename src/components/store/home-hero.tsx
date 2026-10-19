@@ -30,12 +30,15 @@ export function HomeHero({
   products,
   locale,
   t,
+  showSale,
 }: {
   hero: HeroContent;
   /** Featured products with photos: the first one stands in when there's no banner. */
   products: ProductCard[];
   locale: Locale;
   t: Dictionary;
+  /** Link to the sale only when something is on sale. */
+  showSale: boolean;
 }) {
   const at = (path: string) => localePath(locale, path) as Route;
   const title = hero.title || "USBA Official";
@@ -88,9 +91,11 @@ export function HomeHero({
               <ButtonLink href={localizeHref(locale, hero.ctaHref || "/shop") as Route} size="lg">
                 {hero.ctaLabel || t.home.shopNow}
               </ButtonLink>
-              <Link href={at("/shop/sale")} className="hero-link text-base font-medium text-ink">
-                {t.home.viewSale}
-              </Link>
+              {showSale ? (
+                <Link href={at("/shop/sale")} className="hero-link text-base font-medium text-ink">
+                  {t.home.viewSale}
+                </Link>
+              ) : null}
             </div>
           </div>
         </div>

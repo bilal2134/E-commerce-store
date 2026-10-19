@@ -420,10 +420,12 @@ export const SEED_PRODUCTS: SeedProduct[] = [
 
 /** Standard EU→UK/US women's conversions; owner must verify against USBA's lasts. */
 export const SEED_SIZE_CHART = [
+  { eu: "35", uk: "2.5", us: "5", footLengthCm: "22–22.5" },
   { eu: "36", uk: "3", us: "5.5", footLengthCm: "22.5–23" },
   { eu: "37", uk: "4", us: "6.5", footLengthCm: "23–23.5" },
   { eu: "38", uk: "5", us: "7.5", footLengthCm: "23.5–24" },
   { eu: "39", uk: "6", us: "8.5", footLengthCm: "24.5–25" },
   { eu: "40", uk: "6.5", us: "9", footLengthCm: "25–25.5" },
   { eu: "41", uk: "7.5", us: "10", footLengthCm: "25.5–26" },
+  { eu: "42", uk: "8", us: "10.5", footLengthCm: "26–26.5" },
 ];

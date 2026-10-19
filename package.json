@@ -24,6 +24,7 @@
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
     "db:migrate:dsql": "tsx scripts/migrate-dsql.ts",
     "db:seed": "tsx --conditions=react-server --env-file-if-exists=.env scripts/seed.ts",
+    "catalog:import": "tsx --conditions=react-server --env-file-if-exists=.env scripts/import-catalog.ts",
     "db:studio": "drizzle-kit studio",
     "e2e:prepare": "tsx --env-file-if-exists=.env scripts/e2e-prepare.ts",
     "storage:setup": "tsx --conditions=react-server --env-file-if-exists=.env scripts/setup-storage.ts",
@@ -35,6 +36,7 @@
     "aws:migrate": "tsx --env-file=.env.aws scripts/migrate-dsql.ts",
     "aws:seed": "tsx --conditions=react-server --env-file=.env.aws scripts/seed.ts",
     "aws:admin": "tsx --conditions=react-server --env-file=.env.aws scripts/create-admin.ts",
+    "aws:catalog": "tsx --conditions=react-server --env-file=.env.aws scripts/import-catalog.ts",
     "aws:build": "bash scripts/aws/build.sh"
   },
   "pnpm": {

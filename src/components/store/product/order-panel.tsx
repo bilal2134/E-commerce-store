@@ -153,7 +153,7 @@ export function OrderPanel({
               </span>
             ) : null}
           </legend>
-          <div className="mt-3 grid grid-cols-6 gap-2">
+          <div className="mt-3 grid grid-cols-4 gap-2">
             {product.sizes.map((s) => (
               <label key={s.label} className="relative">
                 <input

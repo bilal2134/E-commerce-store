@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
+import { activeCollections } from "@/domain/category";
 import { buildInstagramProfileUrl } from "@/domain/ordering";
 import { localePath, localizeHref } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
@@ -22,13 +23,13 @@ export function Wordmark({ className }: { className?: string }) {
 }
 
 export async function SiteHeader() {
-  const [{ categories }, settings, { locale, t }] = await Promise.all([
+  const [{ categories, products }, settings, { locale, t }] = await Promise.all([
     getCatalog(),
     getLocalizedSettings(),
     getI18n(),
   ]);
   const at = (path: string) => localePath(locale, path) as Route;
-  const links = primaryNav(categories, locale, t);
+  const links = primaryNav(categories, locale, t, activeCollections(products));
   const collections = links.filter((l) => l.href === at("/shop/collab") || l.href === at("/shop/sale"));
   const groups: MobileNavGroup[] = categories.map((root) => ({
     title: root.name,
@@ -72,7 +73,8 @@ export async function SiteHeader() {
           <Link href={at("/")} className="text-ink lg:hidden" aria-label={t.common.homeLink}>
             <Wordmark />
           </Link>
-          <div className="hidden flex-1 lg:block">
+          {/* min-w-0: a long category list scrolls inside the bar instead of widening the page. */}
+          <div className="hidden min-w-0 flex-1 lg:block">
             <DesktopNav links={links} label={t.nav.primary} />
           </div>
           <div className="flex flex-1 items-center justify-end gap-1 lg:flex-none">

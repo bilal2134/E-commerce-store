@@ -1,3 +1,4 @@
+import { activeCollections } from "@/domain/category";
 import type { Metadata } from "next";
 import { resolveShopListing } from "@/domain/category";
 import { localePath, pageAlternates } from "@/i18n/config";
@@ -30,7 +31,7 @@ export default async function ShopPage() {
     <ListingView
       listing={listing}
       siteUrl={env().SITE_URL}
-      navLinks={listingNavLinks(catalog.categories, listing, locale, t)}
+      navLinks={listingNavLinks(catalog.categories, listing, locale, t, activeCollections(catalog.products))}
     />
   );
 }

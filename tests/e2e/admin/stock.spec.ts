@@ -1,3 +1,4 @@
+import { FOOTWEAR_SIZES } from "@/domain/catalog";
 import { expect, test } from "./helpers";
 
 /** Stock counts (owner request 2026-10-06). Seed: Golden Shell Clutch has 3 (scripts/seed-data.ts). */
@@ -24,7 +25,7 @@ test("adjusting stock updates the low-stock notice in the shop", async ({ page }
 test("footwear is counted per size and the low filter finds it", async ({ page }) => {
   await page.goto("/admin/stock?filter=low");
   const sizes = page.getByRole("group", { name: /Size \d+, Cherry Red Trendy Heels/ });
-  await expect(sizes).toHaveCount(6);
+  await expect(sizes).toHaveCount(FOOTWEAR_SIZES.length);
   await expect(page.getByRole("textbox", { name: "Count: Size 37, Cherry Red Trendy Heels" })).toHaveValue(
     "2",
   );

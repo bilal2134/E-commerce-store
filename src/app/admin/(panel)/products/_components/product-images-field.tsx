@@ -110,7 +110,7 @@ export function ProductImagesField({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-soft">
           {images.length} of {MAX_PRODUCT_IMAGES} photos. The first photo is the thumbnail. Visible products
-          need at least {MIN_PRODUCT_IMAGES}.
+          need at least {MIN_PRODUCT_IMAGES === 1 ? "one" : MIN_PRODUCT_IMAGES}.
         </p>
         <div>
           <input

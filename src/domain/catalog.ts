@@ -90,9 +90,9 @@ export const COLOR_SWATCHES: Record<Color, string> = {
 };
 
 /** Requirements §11.2: size options are for footwear only (36–41). */
-export const FOOTWEAR_SIZES = ["36", "37", "38", "39", "40", "41"] as const;
+export const FOOTWEAR_SIZES = ["35", "36", "37", "38", "39", "40", "41", "42"] as const;
 
-export const MIN_PRODUCT_IMAGES = 2;
+export const MIN_PRODUCT_IMAGES = 1;
 export const MAX_PRODUCT_IMAGES = 6;
 
 /** Top-level category slug whose products carry size options. */

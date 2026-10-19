@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { StatusMessage } from "@/components/admin/status-message";
 import { StockPill, Thumb } from "@/components/admin/ui";
-import { STOCK_STATUS_LABELS, STOCK_STATUSES, type StockStatus } from "@/domain/catalog";
+import { MIN_PRODUCT_IMAGES, STOCK_STATUS_LABELS, STOCK_STATUSES, type StockStatus } from "@/domain/catalog";
 import { formatPkr } from "@/domain/money";
 import type { ActionResult } from "@/domain/validation/result";
 import { buttonClasses } from "@/components/ui/button";
@@ -180,10 +180,8 @@ export function ProductsTable({ rows, empty }: { rows: ProductRowView[]; empty?:
                             {row.badge ? ` · ${row.badge}` : ""}
                             {row.featured ? " · Featured" : ""}
                           </p>
-                          {row.imageCount < 2 ? (
-                            <p className="text-xs font-medium text-warning">
-                              Needs at least 2 images to be shown
-                            </p>
+                          {row.imageCount < MIN_PRODUCT_IMAGES ? (
+                            <p className="text-xs font-medium text-warning">Needs a photo to be shown</p>
                           ) : null}
                         </div>
                       </div>
@@ -239,8 +237,8 @@ export function ProductsTable({ rows, empty }: { rows: ProductRowView[]; empty?:
                       {row.code} · {row.categoryName}
                     </p>
                     <p className="mt-1 text-sm">{price(row)}</p>
-                    {row.imageCount < 2 ? (
-                      <p className="text-xs font-medium text-warning">Needs at least 2 images to be shown</p>
+                    {row.imageCount < MIN_PRODUCT_IMAGES ? (
+                      <p className="text-xs font-medium text-warning">Needs a photo to be shown</p>
                     ) : null}
                   </div>
                 </div>

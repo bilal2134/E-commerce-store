@@ -11,7 +11,7 @@ export function DesktopNav({ links, label }: { links: NavLink[]; label: string }
   const pathname = usePathname().replace(/^\/en(?=\/|$)/, "") || "/";
   return (
     <nav aria-label={label} className="hidden lg:block">
-      <ul className="flex items-center xl:gap-x-2">
+      <ul className="scroller -my-1 flex items-center overflow-x-auto py-1 xl:gap-x-2">
         {links.map((l) => {
           const current = pathname === l.href;
           return (

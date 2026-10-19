@@ -5,9 +5,12 @@ import type { ProductCard } from "./product";
 /** Category shortcuts shown on the homepage, in site-map order (§11.3). */
 const SHORTCUT_SLUGS = [
   ["heels", "Heels"],
-  ["sneakers", "Sneakers"],
   ["flats", "Flats & sandals"],
+  ["sneakers", "Sneakers"],
   ["bags", "Bags"],
+  ["tees", "Tees"],
+  ["hoodies", "Hoodies"],
+  ["watches", "Watches"],
   ["wallets", "Wallets"],
   ["jewellery", "Jewellery"],
   ["phone-cases", "Phone cases"],
@@ -60,7 +63,11 @@ export function buildHomeSections(catalog: Catalog): HomeSections {
   const sale = sortProducts(collectionProducts(available, "sale"), "featured").slice(0, 10);
 
   const shortcuts: CategoryShortcut[] = [];
+  const hasSplitClothing = Boolean(
+    findCategory(catalog.categories, "tees") ?? findCategory(catalog.categories, "hoodies"),
+  );
   for (const [slug, label] of SHORTCUT_SLUGS) {
+    if (slug === "clothing" && hasSplitClothing) continue;
     const found = findCategory(catalog.categories, slug);
     if (!found) continue;
     const slugs = new Set([found.node.slug, ...found.children.map((c) => c.slug)]);
@@ -68,6 +75,8 @@ export function buildHomeSections(catalog: Catalog): HomeSections {
       all.filter((p) => slugs.has(p.categorySlug)),
       "featured",
     );
+    // Empty categories get no shortcut (nothing to show behind the tile).
+    if (inCategory.length === 0) continue;
     shortcuts.push({ slug, label, count: inCategory.length, cover: inCategory[0] ?? null });
   }
 

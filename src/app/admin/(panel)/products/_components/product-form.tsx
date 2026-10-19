@@ -15,6 +15,7 @@ import {
   COLOR_SWATCHES,
   COLORS,
   FOOTWEAR_SIZES,
+  MIN_PRODUCT_IMAGES,
   SIZED_ROOT_CATEGORY,
   STOCK_STATUS_LABELS,
   STOCK_STATUSES,
@@ -127,7 +128,7 @@ export function ProductForm(props: ProductFormProps) {
     blurDataUrl: img.blurDataUrl,
     alt: img.alt,
   }));
-  const visibleBlocked = v.isVisible && images.length < 2;
+  const visibleBlocked = v.isVisible && images.length < MIN_PRODUCT_IMAGES;
   // Per-size counts for footwear with sizes ticked; one count otherwise.
   const countsPerSize = v.trackStock && effectiveSizes.length > 0;
   const total = countsPerSize
@@ -399,7 +400,7 @@ export function ProductForm(props: ProductFormProps) {
         >
           <fieldset>
             <legend className="sr-only">Sizes offered</legend>
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {FOOTWEAR_SIZES.map((label) => {
                 const entry = v.sizes.find((s) => s.label === label);
                 return (
@@ -493,7 +494,7 @@ export function ProductForm(props: ProductFormProps) {
               </p>
               {visibleBlocked ? (
                 <p role="alert" className="mt-1 text-sm font-medium text-danger">
-                  Add at least 2 photos to show this product on the site.
+                  Add a photo to show this product on the site.
                 </p>
               ) : null}
             </div>

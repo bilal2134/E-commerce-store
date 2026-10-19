@@ -10,9 +10,9 @@ export const ur: Dictionary = {
     siteName: "USBA Official",
     defaultTitle: "USBA Official — ہیلز، بیگز اور ایکسیسریز",
     defaultDescription:
-      "USBA Official سے ہیلز، سنیکرز، فلیٹس، بیگز، والٹس، جیولری، فون کورز اور کپڑے خریدیں۔ واٹس ایپ یا انسٹاگرام پر آرڈر کریں۔",
+      "USBA Official سے ہیلز، فلیٹس، سنیکرز، بیگز، ٹی شرٹس، ہوڈیز اور گھڑیاں خریدیں۔ واٹس ایپ یا انسٹاگرام پر آرڈر کریں۔",
     shopAllDescription:
-      "USBA کی تمام اشیاء: ہیلز، سنیکرز، فلیٹس، بیگز، والٹس، جیولری، فون کورز اور کپڑے۔ قیمتیں روپے میں؛ واٹس ایپ پر آرڈر کریں۔",
+      "USBA کی تمام اشیاء: ہیلز، فلیٹس، سنیکرز، بیگز، ٹی شرٹس، ہوڈیز اور گھڑیاں۔ قیمتیں روپے میں؛ واٹس ایپ پر آرڈر کریں۔",
     listingDescriptionSuffix: (count: number) =>
       `USBA Official کی ${count} اشیاء۔ قیمتیں روپے میں؛ واٹس ایپ یا انسٹاگرام پر آرڈر کریں۔`,
     notFoundTitle: "صفحہ نہیں ملا",
@@ -45,6 +45,9 @@ export const ur: Dictionary = {
     jewellery: "جیولری",
     phoneCases: "فون کورز",
     clothing: "کپڑے",
+    tees: "ٹی شرٹس",
+    hoodies: "ہوڈیز",
+    watches: "گھڑیاں",
     collab: "کولیب",
     sale: "سیل",
     primary: "مرکزی",
@@ -67,7 +70,7 @@ export const ur: Dictionary = {
   },
   search: {
     title: "پروڈکٹس تلاش کریں",
-    placeholder: "ہیلز، بیگز، والٹس تلاش کریں…",
+    placeholder: "ہیلز، بیگز، گھڑیاں تلاش کریں…",
     suggestions: "تجاویز",
     suggestionsAvailable: (n: number) => `${n} تجاویز دستیاب ہیں`,
     loading: "تجاویز لوڈ ہو رہی ہیں",
@@ -113,7 +116,7 @@ export const ur: Dictionary = {
   },
   listing: {
     shopAllTitle: "تمام اشیاء",
-    shopAllDescription: "USBA کی ہر چیز — ہیلز، سنیکرز، بیگز، والٹس، جیولری، فون کورز اور کپڑے۔",
+    shopAllDescription: "USBA کی ہر چیز — ہیلز، فلیٹس، سنیکرز، بیگز، ٹی شرٹس، ہوڈیز اور گھڑیاں۔",
     collabTitle: "Fairycoreforher کولیب",
     collabDescription: "USBA × @fairycoreforher کولیبوریشن کی اشیاء — جوتے، بیگز اور کپڑے۔",
     saleTitle: "سیل",

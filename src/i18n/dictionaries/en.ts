@@ -8,9 +8,9 @@ export const en = {
     siteName: "USBA Official",
     defaultTitle: "USBA Official — Heels, Bags & Accessories",
     defaultDescription:
-      "Shop USBA Official: heels, sneakers, flats, bags, wallets, jewellery, phone cases and clothing. Order on WhatsApp or Instagram.",
+      "Shop USBA Official: heels, flats, sneakers, bags, tees, hoodies and watches. Order on WhatsApp or Instagram.",
     shopAllDescription:
-      "Shop all USBA pieces: heels, sneakers, flats, bags, wallets, jewellery, phone cases and clothing. Prices in PKR; order on WhatsApp.",
+      "Shop all USBA pieces: heels, flats, sneakers, bags, tees, hoodies and watches. Prices in PKR; order on WhatsApp.",
     listingDescriptionSuffix: (count: number) =>
       `${count} ${count === 1 ? "piece" : "pieces"} from USBA Official. Prices in PKR; order on WhatsApp or Instagram.`,
     notFoundTitle: "Page not found",
@@ -43,6 +43,9 @@ export const en = {
     jewellery: "Jewellery",
     phoneCases: "Phone cases",
     clothing: "Clothing",
+    tees: "Tees",
+    hoodies: "Hoodies",
+    watches: "Watches",
     collab: "Collab",
     sale: "Sale",
     primary: "Primary",
@@ -65,7 +68,7 @@ export const en = {
   },
   search: {
     title: "Search products",
-    placeholder: "Search heels, bags, wallets…",
+    placeholder: "Search heels, bags, watches…",
     suggestions: "Suggestions",
     suggestionsAvailable: (n: number) => `${n} suggestions available`,
     loading: "Loading suggestions",
@@ -111,8 +114,7 @@ export const en = {
   },
   listing: {
     shopAllTitle: "Shop all",
-    shopAllDescription:
-      "Every USBA piece — heels, sneakers, bags, wallets, jewellery, phone cases and clothing.",
+    shopAllDescription: "Every USBA piece — heels, flats, sneakers, bags, tees, hoodies and watches.",
     collabTitle: "Fairycoreforher Collab",
     collabDescription:
       "Pieces from the USBA × @fairycoreforher collaboration — shoes, bags and clothing tagged as collab items.",
