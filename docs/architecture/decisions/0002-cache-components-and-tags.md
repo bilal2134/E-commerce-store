@@ -8,7 +8,7 @@ Requirements want a fast storefront (CS-20, under 3 s on 4G) and admin edits tha
 
 ## Decision
 
-`cacheComponents: true`. Public reads in `src/server/catalog/public.ts` use `'use cache'`, `cacheTag()` and `cacheLife("storefront")` (stale 300 s, revalidate 900 s, expire 1 d). Three coarse tags: `catalog`, `settings`, `reviews`. Every admin mutation calls `updateTag()` for the affected tags. Runtime data (`searchParams`, cookies) only inside Suspense/client components so shells stay static.
+`cacheComponents: true`. Public reads in `src/server/catalog/public.ts` use `'use cache'`, `cacheTag()` and `cacheLife("storefront")` (stale 300 s, revalidate 1 d, expire 7 d). Three coarse tags: `catalog`, `settings`, `reviews`. Every admin mutation calls `updateTag()` for the affected tags. Runtime data (`searchParams`, cookies) only inside Suspense/client components so shells stay static.
 
 ## Alternatives considered
 

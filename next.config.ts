@@ -57,8 +57,10 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   serverExternalPackages: ["@node-rs/argon2", "sharp"],
   cacheLife: {
-    /** Storefront data: explicitly invalidated on admin edits; this is the safety net. */
-    storefront: { stale: 300, revalidate: 900, expire: 86400 },
+    /** Storefront data: explicitly invalidated on admin edits; this is the safety net.
+     *  Kept long: each regeneration rewrites the S3 cache entry, and on Lambda a
+     *  burst of requests regenerates it many times over (docs/deployment/aws.md). */
+    storefront: { stale: 300, revalidate: 86400, expire: 604800 },
   },
   experimental: {
     // The persisted dev cache (.next/dev/cache/turbopack) went stale here more

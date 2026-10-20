@@ -45,7 +45,7 @@ No third-party service is called from the browser except optional analytics (ADR
 ## Caching model (ADR 0002)
 
 - `cacheComponents: true`. Public data functions use `'use cache'`, `cacheTag(...)` and `cacheLife("storefront")`.
-- `storefront` profile (next.config.ts): `stale: 300` s, `revalidate: 900` s, `expire: 86400` s. This is the safety net; explicit invalidation is the primary mechanism.
+- `storefront` profile (next.config.ts): `stale: 300` s, `revalidate: 86400` s, `expire: 604800` s. This is the safety net; explicit invalidation is the primary mechanism.
 - Tags: `catalog` (products, categories, images, sizes), `settings` (site_settings), `reviews`. Coarse by design.
 - Admin Server Actions call `updateTag()` (immediate expiry, read-your-writes). Do not use the one-argument `revalidateTag` (deprecated in 16; docs/research/stack.md).
 - The cache is per instance (memory + disk). A single instance needs no extra config; multi-instance: see scaling.md.

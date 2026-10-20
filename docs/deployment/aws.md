@@ -165,6 +165,8 @@ The workflow does nothing until `AWS_DEPLOY_ROLE_ARN` or `AWS_DEPLOY_WITH_KEYS` 
 
 The stack only creates free-tier resources. If you change it, avoid: NAT gateways, EC2/load balancers or anything with a public IPv4 address, RDS, Secrets Manager (use SSM Parameter Store), API Gateway, Lambda@Edge, provisioned concurrency, CloudWatch log retention beyond a week, DynamoDB on-demand mode, Route 53 hosted zones ($0.50 a month each), WAF.
 
+S3 storage: the bucket is versioned so a deleted or replaced photo stays recoverable for 30 days. The page cache under `_cache/` is different: every regeneration of a cached storefront read rewrites its entry, and a burst of requests (crawlers, the first visits after an admin edit) on separate Lambda instances can rewrite the same entry dozens of times in a few seconds. With 30-day versions that reached ~8 GB of old copies in two weeks (2026-10-20), so `_cache/` versions expire after 1 day, and the `storefront` cache life revalidates daily instead of every 15 minutes (admin edits still refresh immediately). Check with `aws s3api list-object-versions --bucket <bucket> --prefix _cache/`.
+
 ## How it fits together
 
 ```

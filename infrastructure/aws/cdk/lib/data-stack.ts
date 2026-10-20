@@ -32,6 +32,9 @@ export class DataStack extends Stack {
       versioned: true,
       lifecycleRules: [
         { id: "expire-old-versions", noncurrentVersionExpiration: Duration.days(30) },
+        // The page cache is rewritten thousands of times a day and rebuilds itself,
+        // so its old versions are worthless: left at 30 days they reached ~8 GB.
+        { id: "expire-old-cache-versions", prefix: "_cache/", noncurrentVersionExpiration: Duration.days(1) },
         { id: "clean-failed-uploads", abortIncompleteMultipartUploadAfter: Duration.days(7) },
         { id: "remove-expired-delete-markers", expiredObjectDeleteMarker: true },
       ],

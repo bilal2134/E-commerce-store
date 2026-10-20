@@ -42,7 +42,7 @@ Budget: keep first-party client JS under 30 KB gzip per route; any new client co
 
 ## How it's achieved
 
-- **Rendering**: Cache Components; all catalogue pages are static (prerendered at build, revalidated by tag or every 15 min). Product cards are Server Components; the filterable grid receives them as pre-rendered nodes, so cards never hydrate as client components.
+- **Rendering**: Cache Components; all catalogue pages are static (prerendered at build, revalidated by tag or daily). Product cards are Server Components; the filterable grid receives them as pre-rendered nodes, so cards never hydrate as client components.
 - **Images**: sharp WebP variants, explicit dimensions, 4:5 frames (CLS 0), `sizes` per layout, lazy below the fold, immutable cache headers on objects.
 - **Data**: one cached catalogue query (2 SQL statements, no N+1) feeds every listing, search index and homepage section.
 - **Search**: ~100 bytes/product JSON index loaded only when the search dialog opens.
